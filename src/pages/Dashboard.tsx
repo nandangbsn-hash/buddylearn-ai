@@ -11,7 +11,9 @@ import {
   BarChart3, 
   MessageSquare, 
   LogOut,
-  Upload
+  Upload,
+  Calendar,
+  FileQuestion
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { GamificationWidget } from "@/components/GamificationWidget";
@@ -129,15 +131,32 @@ const Dashboard = () => {
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-primary" />
+                <FileQuestion className="h-5 w-5 text-primary" />
                 <CardTitle>Homework Helper</CardTitle>
               </div>
-              <CardDescription>Upload homework & get research help</CardDescription>
+              <CardDescription>Submit homework & get AI help</CardDescription>
             </CardHeader>
             <CardContent>
               <Button className="w-full" variant="outline" onClick={() => navigate("/homework")}>
-                <BookOpen className="h-4 w-4 mr-2" />
+                <FileQuestion className="h-4 w-4 mr-2" />
                 Get Help
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Study Planner */}
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-primary" />
+                <CardTitle>Study Planner</CardTitle>
+              </div>
+              <CardDescription>Schedule tasks & get email reminders</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button className="w-full" variant="outline" onClick={() => navigate("/planner")}>
+                <Calendar className="h-4 w-4 mr-2" />
+                Open Planner
               </Button>
             </CardContent>
           </Card>
@@ -149,33 +168,69 @@ const Dashboard = () => {
                 <BarChart3 className="h-5 w-5 text-primary" />
                 <CardTitle>Progress</CardTitle>
               </div>
-              <CardDescription>Track your learning journey</CardDescription>
+              <CardDescription>View performance & analytics</CardDescription>
             </CardHeader>
             <CardContent>
-          <Button className="w-full" variant="outline" onClick={() => navigate("/progress")}>
-            <BarChart3 className="h-4 w-4 mr-2" />
-            View Progress
-          </Button>
+              <Button className="w-full" variant="outline" onClick={() => navigate("/progress")}>
+                <BarChart3 className="h-4 w-4 mr-2" />
+                View Progress
+              </Button>
             </CardContent>
           </Card>
 
           {/* Quick Stats */}
-          <Card className="md:col-span-2 lg:col-span-2 bg-gradient-to-br from-primary/10 to-secondary/10">
+          <Card className="md:col-span-2 lg:col-span-3 bg-gradient-to-br from-primary/10 to-secondary/10">
             <CardHeader>
-              <CardTitle>Getting Started</CardTitle>
-              <CardDescription>Begin your personalized learning journey</CardDescription>
+              <CardTitle>🎯 Your Learning Hub</CardTitle>
+              <CardDescription>All your study tools in one place</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Welcome to Buddy! Start by uploading your study materials, and let our AI help you learn more effectively.
-              </p>
-              <div className="flex gap-2">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <Upload className="h-4 w-4" />
+                    Study Materials
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Upload PDFs, docs, images, and URLs. AI automatically organizes and summarizes them.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4" />
+                    Ask Your Notes
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Chat with your materials. Get explanations, flashcards, and flowcharts.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <FileQuestion className="h-4 w-4" />
+                    Homework Helper
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Submit homework for XP, get step-by-step help, and research topics with citations.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Study Planner
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Schedule tasks and get automatic email reminders before deadlines.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2 pt-4">
                 <Button onClick={() => navigate("/materials")}>
                   <Upload className="h-4 w-4 mr-2" />
-                  Upload First Material
+                  Start Learning
                 </Button>
-                <Button variant="outline" onClick={() => navigate("/ai-chat")}>
-                  Take a Tour
+                <Button variant="outline" onClick={() => navigate("/planner")}>
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Plan Studies
                 </Button>
               </div>
             </CardContent>

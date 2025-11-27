@@ -14,7 +14,11 @@ serve(async (req) => {
     const { messages, context, mode = 'explain' } = await req.json();
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')!;
 
-    const systemPrompt = `You are an expert tutor who excels at explaining complex concepts. Use rich formatting:
+    let systemPrompt = '';
+    
+    switch (mode) {
+      case 'explain':
+        systemPrompt = `You are an expert tutor who excels at explaining complex concepts. Use rich formatting:
 
 **Formatting Guidelines:**
 - Use ## for main headings

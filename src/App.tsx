@@ -9,6 +9,9 @@ import Dashboard from "./pages/Dashboard";
 import Materials from "./pages/Materials";
 import AIChat from "./pages/AIChat";
 import Quizzes from "./pages/Quizzes";
+import HomeworkHelper from "./pages/HomeworkHelper";
+import StudyPlanner from "./pages/StudyPlanner";
+import Progress from "./pages/Progress";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();

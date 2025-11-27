@@ -26,7 +26,6 @@ serve(async (req) => {
       .from('study_plans')
       .select(`
         *,
-        profiles!inner(email, full_name),
         subjects(name)
       `)
       .eq('completed', false)
@@ -36,10 +35,26 @@ serve(async (req) => {
 
     if (plansError) throw plansError;
 
+    // Get user details for each plan
+    const userIds = [...new Set(plans?.map(p => p.user_id) || [])];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, email, full_name')
+      .in('id', userIds);
+
+    // Create a map of user profiles
+    const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
     const results = [];
     
     for (const plan of plans || []) {
       try {
+        const profile = profileMap.get(plan.user_id);
+        if (!profile?.email) {
+          console.log(`Skipping plan ${plan.id}: No email found for user`);
+          continue;
+        }
+
         const dueDate = new Date(plan.due_date).toLocaleString();
         const subjectName = plan.subjects?.name || 'General';
         
@@ -51,10 +66,10 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             from: 'Buddy Study Companion <onboarding@resend.dev>',
-            to: [plan.profiles.email],
+            to: [profile.email],
             subject: `Reminder: ${plan.title} due soon!`,
             html: `
-              <h2>Hey ${plan.profiles.full_name || 'there'}!</h2>
+              <h2>Hey ${profile.full_name || 'there'}!</h2>
               <p>This is a friendly reminder about your upcoming task:</p>
               <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
                 <h3 style="margin: 0 0 10px 0;">${plan.title}</h3>

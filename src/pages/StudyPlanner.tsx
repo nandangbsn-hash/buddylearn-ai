@@ -8,8 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Calendar as CalendarIcon, CheckCircle2, Clock } from "lucide-react";
+import { ArrowLeft, Plus, Calendar as CalendarIcon, CheckCircle2, Clock, Mail, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 
 const StudyPlanner = () => {
@@ -18,6 +19,7 @@ const StudyPlanner = () => {
   const [subjects, setSubjects] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSendingReminders, setIsSendingReminders] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -112,6 +114,44 @@ const StudyPlanner = () => {
     });
   };
 
+  const getCalendarDaysWithPlans = () => {
+    const daysWithPlans = new Set(
+      plans.map(plan => format(new Date(plan.due_date), "yyyy-MM-dd"))
+    );
+    return daysWithPlans;
+  };
+
+  const sendTestReminders = async () => {
+    setIsSendingReminders(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-reminder`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to send reminders");
+
+      const data = await response.json();
+      if (data.sent > 0) {
+        toast.success(`Sent ${data.sent} reminder(s)! Check your email.`);
+      } else {
+        toast.info("No pending reminders to send right now");
+      }
+      fetchPlans(); // Refresh to update reminder_sent status
+    } catch (error: any) {
+      console.error("Error sending reminders:", error);
+      toast.error(error.message || "Failed to send reminders");
+    } finally {
+      setIsSendingReminders(false);
+    }
+  };
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "high": return "text-destructive";
@@ -132,13 +172,31 @@ const StudyPlanner = () => {
             <CalendarIcon className="h-8 w-8 text-primary" />
             <h1 className="text-2xl font-bold">Study Planner</h1>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="ml-auto">
-                <Plus className="h-4 w-4 mr-2" />
-                New Plan
-              </Button>
-            </DialogTrigger>
+          <div className="ml-auto flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={sendTestReminders}
+              disabled={isSendingReminders}
+            >
+              {isSendingReminders ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Mail className="h-4 w-4 mr-2" />
+                  Send Reminders
+                </>
+              )}
+            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Plan
+                </Button>
+              </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Create Study Plan</DialogTitle>
@@ -202,7 +260,8 @@ const StudyPlanner = () => {
                 <Button type="submit" className="w-full">Create Plan</Button>
               </form>
             </DialogContent>
-          </Dialog>
+            </Dialog>
+          </div>
         </div>
       </header>
 
@@ -212,14 +271,33 @@ const StudyPlanner = () => {
           <Card>
             <CardHeader>
               <CardTitle>Calendar View</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Days with tasks are highlighted. Reminders sent automatically every hour.
+              </p>
             </CardHeader>
             <CardContent className="flex justify-center">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => date && setSelectedDate(date)}
-                className="rounded-md border"
-              />
+              <div className="relative">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => date && setSelectedDate(date)}
+                  className="rounded-md border pointer-events-auto"
+                  modifiers={{
+                    hasPlans: (date) => {
+                      const dateStr = format(date, "yyyy-MM-dd");
+                      return getCalendarDaysWithPlans().has(dateStr);
+                    }
+                  }}
+                  modifiersStyles={{
+                    hasPlans: { 
+                      fontWeight: 'bold',
+                      backgroundColor: 'hsl(var(--primary))',
+                      color: 'hsl(var(--primary-foreground))',
+                      borderRadius: '0.375rem'
+                    }
+                  }}
+                />
+              </div>
             </CardContent>
           </Card>
 
@@ -244,13 +322,23 @@ const StudyPlanner = () => {
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <h3 className={`font-semibold ${plan.completed ? "line-through" : ""}`}>
                               {plan.title}
                             </h3>
-                            <span className={`text-xs ${getPriorityColor(plan.priority)}`}>
+                            <Badge variant={
+                              plan.priority === 'high' ? 'destructive' : 
+                              plan.priority === 'medium' ? 'default' : 
+                              'secondary'
+                            }>
                               {plan.priority}
-                            </span>
+                            </Badge>
+                            {plan.reminder_sent && (
+                              <Badge variant="outline" className="text-xs">
+                                <Mail className="h-3 w-3 mr-1" />
+                                Reminder Sent
+                              </Badge>
+                            )}
                           </div>
                           {plan.subjects && (
                             <p className="text-sm text-muted-foreground mt-1">
@@ -295,14 +383,24 @@ const StudyPlanner = () => {
                   plans.filter(p => !p.completed).map((plan) => (
                     <div
                       key={plan.id}
-                      className="p-4 rounded-lg border bg-card flex items-center justify-between"
+                      className="p-4 rounded-lg border bg-card flex items-center justify-between hover:shadow-md transition-shadow"
                     >
                       <div className="flex-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="font-semibold">{plan.title}</h3>
-                          <span className={`text-xs ${getPriorityColor(plan.priority)}`}>
+                          <Badge variant={
+                            plan.priority === 'high' ? 'destructive' : 
+                            plan.priority === 'medium' ? 'default' : 
+                            'secondary'
+                          }>
                             {plan.priority}
-                          </span>
+                          </Badge>
+                          {plan.reminder_sent && (
+                            <Badge variant="outline" className="text-xs">
+                              <Mail className="h-3 w-3 mr-1" />
+                              Sent
+                            </Badge>
+                          )}
                         </div>
                         {plan.subjects && (
                           <p className="text-sm text-muted-foreground">{plan.subjects.name}</p>

@@ -59,7 +59,7 @@ serve(async (req) => {
         }
 
         // Build task list HTML
-        const taskListHtml = userPlans.map(plan => {
+        const taskListHtml = userPlans.map((plan: any) => {
           const dueDate = new Date(plan.due_date).toLocaleString('en-US', {
             weekday: 'short',
             month: 'short',

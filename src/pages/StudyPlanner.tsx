@@ -72,6 +72,7 @@ const StudyPlanner = () => {
 
     const { error } = await supabase.from("study_plans").insert({
       ...formData,
+      subject_id: formData.subject_id || null, // Convert empty string to null
       user_id: user.id,
       due_date: formData.due_date.toISOString(),
     });

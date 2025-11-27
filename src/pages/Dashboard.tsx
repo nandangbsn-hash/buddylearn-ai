@@ -43,12 +43,12 @@ const Dashboard = () => {
       .from("profiles")
       .select("*")
       .eq("id", userId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Error fetching profile:", error);
     } else {
-      setProfile(data);
+      setProfile(data || { full_name: "Student" });
     }
   };
 
@@ -95,7 +95,7 @@ const Dashboard = () => {
               <CardDescription>Upload and organize your notes</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button className="w-full" variant="outline">
+              <Button className="w-full" variant="outline" onClick={() => navigate("/materials")}>
                 <BookOpen className="h-4 w-4 mr-2" />
                 Manage Materials
               </Button>

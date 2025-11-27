@@ -14,7 +14,157 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      material_summaries: {
+        Row: {
+          created_at: string | null
+          id: string
+          key_points: string[] | null
+          material_id: string
+          summary: string | null
+          topic_dependencies: string[] | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          key_points?: string[] | null
+          material_id: string
+          summary?: string | null
+          topic_dependencies?: string[] | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          key_points?: string[] | null
+          material_id?: string
+          summary?: string | null
+          topic_dependencies?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_summaries_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      materials: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          difficulty: string | null
+          estimated_time_minutes: number | null
+          file_type: string
+          file_url: string | null
+          id: string
+          keywords: string[] | null
+          subject_id: string | null
+          title: string
+          topic: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          difficulty?: string | null
+          estimated_time_minutes?: number | null
+          file_type: string
+          file_url?: string | null
+          id?: string
+          keywords?: string[] | null
+          subject_id?: string | null
+          title: string
+          topic?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          difficulty?: string | null
+          estimated_time_minutes?: number | null
+          file_type?: string
+          file_url?: string | null
+          id?: string
+          keywords?: string[] | null
+          subject_id?: string | null
+          title?: string
+          topic?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materials_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          full_name: string | null
+          grade_level: string | null
+          id: string
+          learning_pace: string | null
+          learning_style: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          full_name?: string | null
+          grade_level?: string | null
+          id: string
+          learning_pace?: string | null
+          learning_style?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          full_name?: string | null
+          grade_level?: string | null
+          id?: string
+          learning_pace?: string | null
+          learning_style?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      subjects: {
+        Row: {
+          color_code: string | null
+          created_at: string | null
+          icon: string | null
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          color_code?: string | null
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          color_code?: string | null
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

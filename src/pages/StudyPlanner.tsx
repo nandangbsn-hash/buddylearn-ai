@@ -376,12 +376,12 @@ const StudyPlanner = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {plans.filter(p => !p.completed).length === 0 ? (
+                {plans.filter(p => !p.completed && new Date(p.due_date) > new Date()).length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">
                     No upcoming tasks. Create one to get started!
                   </p>
                 ) : (
-                  plans.filter(p => !p.completed).map((plan) => (
+                  plans.filter(p => !p.completed && new Date(p.due_date) > new Date()).map((plan) => (
                     <div
                       key={plan.id}
                       className="p-4 rounded-lg border bg-card flex items-center justify-between hover:shadow-md transition-shadow"

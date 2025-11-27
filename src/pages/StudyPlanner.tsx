@@ -110,6 +110,7 @@ const StudyPlanner = () => {
 
   const getDaysPlans = (date: Date) => {
     return plans.filter(plan => {
+      if (!isValidDate(plan.due_date)) return false;
       const planDate = new Date(plan.due_date);
       return format(planDate, "yyyy-MM-dd") === format(date, "yyyy-MM-dd");
     });
@@ -117,7 +118,7 @@ const StudyPlanner = () => {
 
   const getCalendarDaysWithPlans = () => {
     const daysWithPlans = new Set(
-      plans.map(plan => format(new Date(plan.due_date), "yyyy-MM-dd"))
+      plans.filter(p => isValidDate(p.due_date)).map(plan => format(new Date(plan.due_date), "yyyy-MM-dd"))
     );
     return daysWithPlans;
   };
@@ -160,6 +161,16 @@ const StudyPlanner = () => {
       case "low": return "text-muted-foreground";
       default: return "";
     }
+  };
+
+  const isValidDate = (date: any) => {
+    const d = new Date(date);
+    return d instanceof Date && !isNaN(d.getTime()) && date != null;
+  };
+
+  const safeFormatDate = (date: any, formatStr: string) => {
+    if (!isValidDate(date)) return "Invalid date";
+    return format(new Date(date), formatStr);
   };
 
   return (
@@ -351,7 +362,7 @@ const StudyPlanner = () => {
                           )}
                           <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
                             <Clock className="h-3 w-3" />
-                            {format(new Date(plan.due_date), "h:mm a")}
+                            {safeFormatDate(plan.due_date, "h:mm a")}
                           </div>
                         </div>
                         <Button
@@ -376,12 +387,12 @@ const StudyPlanner = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {plans.filter(p => !p.completed && new Date(p.due_date) > new Date()).length === 0 ? (
+                {plans.filter(p => !p.completed && isValidDate(p.due_date) && new Date(p.due_date) > new Date()).length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">
                     No upcoming tasks. Create one to get started!
                   </p>
                 ) : (
-                  plans.filter(p => !p.completed && new Date(p.due_date) > new Date()).map((plan) => (
+                  plans.filter(p => !p.completed && isValidDate(p.due_date) && new Date(p.due_date) > new Date()).map((plan) => (
                     <div
                       key={plan.id}
                       className="p-4 rounded-lg border bg-card flex items-center justify-between hover:shadow-md transition-shadow"
@@ -407,7 +418,7 @@ const StudyPlanner = () => {
                           <p className="text-sm text-muted-foreground">{plan.subjects.name}</p>
                         )}
                         <p className="text-sm text-muted-foreground mt-1">
-                          Due: {format(new Date(plan.due_date), "MMM dd, yyyy 'at' h:mm a")}
+                          Due: {safeFormatDate(plan.due_date, "MMM dd, yyyy 'at' h:mm a")}
                         </p>
                       </div>
                       <Button

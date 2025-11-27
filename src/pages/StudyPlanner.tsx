@@ -264,7 +264,7 @@ const StudyPlanner = () => {
                 <div>
                   <Input
                     type="datetime-local"
-                    value={format(formData.due_date, "yyyy-MM-dd'T'HH:mm")}
+                    value={isValidDate(formData.due_date) ? format(formData.due_date, "yyyy-MM-dd'T'HH:mm") : ""}
                     onChange={(e) => setFormData({ ...formData, due_date: new Date(e.target.value) })}
                     required
                   />

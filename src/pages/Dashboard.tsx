@@ -14,6 +14,7 @@ import {
   Upload
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { GamificationWidget } from "@/components/GamificationWidget";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -85,6 +86,11 @@ const Dashboard = () => {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {/* Gamification Widget */}
+          <div className="lg:col-span-3">
+            <GamificationWidget />
+          </div>
+
           {/* Study Materials */}
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
@@ -112,7 +118,7 @@ const Dashboard = () => {
               <CardDescription>Chat with your study materials</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button className="w-full" variant="outline">
+              <Button className="w-full" variant="outline" onClick={() => navigate("/ai-chat")}>
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Start Chat
               </Button>
@@ -164,11 +170,11 @@ const Dashboard = () => {
                 Welcome to Buddy! Start by uploading your study materials, and let our AI help you learn more effectively.
               </p>
               <div className="flex gap-2">
-                <Button>
+                <Button onClick={() => navigate("/materials")}>
                   <Upload className="h-4 w-4 mr-2" />
                   Upload First Material
                 </Button>
-                <Button variant="outline">
+                <Button variant="outline" onClick={() => navigate("/ai-chat")}>
                   Take a Tour
                 </Button>
               </div>

@@ -44,6 +44,56 @@ export type Database = {
         }
         Relationships: []
       }
+      homework_submissions: {
+        Row: {
+          description: string | null
+          file_type: string | null
+          file_url: string | null
+          id: string
+          reviewed_at: string | null
+          status: string | null
+          subject_id: string | null
+          submitted_at: string | null
+          title: string
+          user_id: string
+          xp_awarded: number | null
+        }
+        Insert: {
+          description?: string | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          reviewed_at?: string | null
+          status?: string | null
+          subject_id?: string | null
+          submitted_at?: string | null
+          title: string
+          user_id: string
+          xp_awarded?: number | null
+        }
+        Update: {
+          description?: string | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          reviewed_at?: string | null
+          status?: string | null
+          subject_id?: string | null
+          submitted_at?: string | null
+          title?: string
+          user_id?: string
+          xp_awarded?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "homework_submissions_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       material_summaries: {
         Row: {
           created_at: string | null
@@ -234,6 +284,107 @@ export type Database = {
             columns: ["material_id"]
             isOneToOne: false
             referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_plans: {
+        Row: {
+          completed: boolean | null
+          created_at: string | null
+          description: string | null
+          due_date: string
+          id: string
+          priority: string | null
+          reminder_sent: boolean | null
+          subject_id: string | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          due_date: string
+          id?: string
+          priority?: string | null
+          reminder_sent?: boolean | null
+          subject_id?: string | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string
+          id?: string
+          priority?: string | null
+          reminder_sent?: boolean | null
+          subject_id?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_plans_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_sessions: {
+        Row: {
+          created_at: string | null
+          duration_minutes: number
+          focus_score: number | null
+          id: string
+          material_id: string | null
+          notes: string | null
+          session_date: string | null
+          subject_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          duration_minutes: number
+          focus_score?: number | null
+          id?: string
+          material_id?: string | null
+          notes?: string | null
+          session_date?: string | null
+          subject_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          duration_minutes?: number
+          focus_score?: number | null
+          id?: string
+          material_id?: string | null
+          notes?: string | null
+          session_date?: string | null
+          subject_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_sessions_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "study_sessions_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
             referencedColumns: ["id"]
           },
         ]

@@ -125,19 +125,19 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Study Planner */}
+          {/* Homework Helper */}
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-primary" />
-                <CardTitle>Study Planner</CardTitle>
+                <BookOpen className="h-5 w-5 text-primary" />
+                <CardTitle>Homework Helper</CardTitle>
               </div>
-              <CardDescription>Schedule and track your study goals</CardDescription>
+              <CardDescription>Upload homework & get research help</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button className="w-full" variant="outline">
-                <Target className="h-4 w-4 mr-2" />
-                View Planner
+              <Button className="w-full" variant="outline" onClick={() => navigate("/homework")}>
+                <BookOpen className="h-4 w-4 mr-2" />
+                Get Help
               </Button>
             </CardContent>
           </Card>
@@ -152,10 +152,10 @@ const Dashboard = () => {
               <CardDescription>Track your learning journey</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button className="w-full" variant="outline">
-                <BarChart3 className="h-4 w-4 mr-2" />
-                View Progress
-              </Button>
+          <Button className="w-full" variant="outline" onClick={() => navigate("/progress")}>
+            <BarChart3 className="h-4 w-4 mr-2" />
+            View Progress
+          </Button>
             </CardContent>
           </Card>
 

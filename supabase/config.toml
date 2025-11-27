@@ -8,3 +8,15 @@ verify_jwt = true
 
 [functions.ai-chat]
 verify_jwt = true
+
+[functions.send-reminder]
+verify_jwt = false
+
+[functions.check-homework]
+verify_jwt = true
+
+[functions.research-agent]
+verify_jwt = true
+
+[functions.homework-helper]
+verify_jwt = true

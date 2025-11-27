@@ -24,8 +24,11 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/materials" element={<Materials />} />
-          <Route path="/ai-chat" element={<AIChat />} />
-          <Route path="/quizzes" element={<Quizzes />} />
+        <Route path="/ai-chat" element={<AIChat />} />
+        <Route path="/quizzes" element={<Quizzes />} />
+        <Route path="/homework" element={<HomeworkHelper />} />
+        <Route path="/planner" element={<StudyPlanner />} />
+        <Route path="/progress" element={<Progress />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

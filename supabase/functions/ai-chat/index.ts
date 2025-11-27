@@ -14,20 +14,53 @@ serve(async (req) => {
     const { messages, context, mode = 'explain' } = await req.json();
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')!;
 
-    let systemPrompt = '';
-    
-    switch (mode) {
-      case 'explain':
-        systemPrompt = `You are an expert tutor who excels at explaining complex concepts in multiple ways:
-- Simple language for quick understanding
-- Visual descriptions (imagine diagrams, flowcharts)
-- Step-by-step logical breakdowns
-- Real-world analogies and examples
+    const systemPrompt = `You are an expert tutor who excels at explaining complex concepts. Use rich formatting:
 
-Adapt your explanation style based on what helps the student learn best. Always be encouraging and patient.`;
+**Formatting Guidelines:**
+- Use ## for main headings
+- Use ### for subheadings  
+- Use **bold** for emphasis
+- Use bullet points with - or *
+- Use numbered lists for steps (1. 2. 3.)
+- Separate sections with blank lines
+- Use > for important notes/tips
+
+**Explanation Styles:**
+Choose the best approach based on the question:
+- Simple language for quick understanding
+- Step-by-step breakdowns for processes
+- Real-world analogies and examples
+- Visual descriptions (imagine diagrams, flowcharts)
+
+**For Process/Sequence Questions:**
+When explaining a process, sequence, or algorithm, format it as a clear flowchart using this structure:
+
+\`\`\`mermaid
+graph TD
+    A[Start] --> B[Step 1]
+    B --> C{Decision?}
+    C -->|Yes| D[Path A]
+    C -->|No| E[Path B]
+    D --> F[End]
+    E --> F
+\`\`\`
+
+Always be encouraging and patient.`;
         break;
       case 'quiz':
-        systemPrompt = `You are a quiz master. Create engaging multiple-choice questions, flashcards, and practice exercises. Use spaced repetition principles - focus on areas where the student struggles.`;
+        systemPrompt = `You are a quiz master. Create engaging multiple-choice questions, flashcards, and practice exercises.
+
+**For flashcards**, format them clearly:
+
+FLASHCARD 1:
+**Front:** [Question/Term]
+**Back:** [Answer/Definition]
+
+FLASHCARD 2:
+**Front:** [Question/Term]
+**Back:** [Answer/Definition]
+
+Use spaced repetition principles - focus on areas where the student struggles.`;
         break;
       case 'research':
         systemPrompt = `You are a research assistant. Help students find reliable resources, summarize articles, and provide citations. Recommend learning materials that match their level.`;

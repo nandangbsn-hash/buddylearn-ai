@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Brain, Upload, FileText, ArrowLeft, Loader2 } from "lucide-react";
+import { Brain, Upload, FileText, ArrowLeft, Loader2, Sparkles } from "lucide-react";
+import { FileUpload } from "@/components/FileUpload";
 
 const Materials = () => {
   const navigate = useNavigate();
@@ -24,6 +25,8 @@ const Materials = () => {
   const [subjectId, setSubjectId] = useState("");
   const [topic, setTopic] = useState("");
   const [difficulty, setDifficulty] = useState("");
+  const [fileUrl, setFileUrl] = useState("");
+  const [fileType, setFileType] = useState("text");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -96,28 +99,66 @@ const Materials = () => {
     setIsUploading(true);
 
     try {
-      const { error } = await supabase.from("materials").insert({
+      const { data: material, error } = await supabase.from("materials").insert({
         title,
         content,
         subject_id: subjectId || null,
         topic: topic || null,
         difficulty: difficulty || null,
-        file_type: "text",
+        file_type: fileType,
+        file_url: fileUrl || null,
         user_id: session.user.id,
-      });
+      }).select().single();
 
       if (error) throw error;
+
+      // Process with AI if there's content
+      if (content && material) {
+        supabase.functions.invoke('process-material', {
+          body: { materialId: material.id, content }
+        });
+      }
+
+      // Award XP for uploading material
+      await awardXP(10);
 
       toast.success("Study material added successfully!");
       setTitle("");
       setContent("");
       setTopic("");
       setDifficulty("");
+      setFileUrl("");
+      setFileType("text");
       fetchMaterials();
     } catch (error: any) {
       toast.error(error.message || "Failed to add material");
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const awardXP = async (amount: number) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: progress } = await supabase
+      .from("user_progress")
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (progress) {
+      const newXP = progress.total_xp + amount;
+      const newLevel = Math.floor(newXP / 100) + 1;
+
+      await supabase
+        .from("user_progress")
+        .update({
+          total_xp: newXP,
+          level: newLevel,
+          last_activity_date: new Date().toISOString().split('T')[0]
+        })
+        .eq("user_id", user.id);
     }
   };
 
@@ -152,6 +193,14 @@ const Materials = () => {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
+                <FileUpload
+                  onUploadComplete={(url, type, text) => {
+                    setFileUrl(url);
+                    setFileType(type);
+                    if (text) setContent(text);
+                  }}
+                />
+
                 <div className="space-y-2">
                   <Label htmlFor="title">Title *</Label>
                   <Input
@@ -276,7 +325,15 @@ const Materials = () => {
                         Topic: {material.topic}
                       </p>
                     )}
-                    <p className="text-sm line-clamp-3">{material.content}</p>
+                    <p className="text-sm line-clamp-3 mb-4">{material.content}</p>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => navigate(`/quizzes?materialId=${material.id}`)}
+                    >
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Generate Quiz
+                    </Button>
                   </CardContent>
                 </Card>
               ))

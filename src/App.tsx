@@ -11,6 +11,7 @@ import AIChat from "./pages/AIChat";
 import Quizzes from "./pages/Quizzes";
 import HomeworkHelper from "./pages/HomeworkHelper";
 import StudyPlanner from "./pages/StudyPlanner";
+import EmailPreferences from "./pages/EmailPreferences";
 import Progress from "./pages/Progress";
 import NotFound from "./pages/NotFound";
 
@@ -29,9 +30,10 @@ const App = () => (
           <Route path="/materials" element={<Materials />} />
         <Route path="/ai-chat" element={<AIChat />} />
         <Route path="/quizzes" element={<Quizzes />} />
-        <Route path="/homework" element={<HomeworkHelper />} />
-        <Route path="/planner" element={<StudyPlanner />} />
-        <Route path="/progress" element={<Progress />} />
+          <Route path="/homework" element={<HomeworkHelper />} />
+          <Route path="/planner" element={<StudyPlanner />} />
+          <Route path="/email-preferences" element={<EmailPreferences />} />
+          <Route path="/progress" element={<Progress />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

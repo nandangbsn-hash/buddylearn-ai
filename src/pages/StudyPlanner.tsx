@@ -10,7 +10,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Calendar as CalendarIcon, CheckCircle2, Clock, Mail, Loader2, FileText } from "lucide-react";
+import { ArrowLeft, Plus, Calendar as CalendarIcon, CheckCircle2, Clock, Mail, Loader2, FileText, Settings } from "lucide-react";
 import { PendingWorkReport } from "@/components/PendingWorkReport";
 import { format } from "date-fns";
 
@@ -143,10 +143,10 @@ const StudyPlanner = () => {
       if (!response.ok) throw new Error("Failed to send reminders");
 
       const data = await response.json();
-      if (data.sent > 0) {
-        toast.success(`Sent ${data.sent} reminder(s)! Check your email.`);
+      if (data.digests_sent > 0) {
+        toast.success(`Daily digest sent successfully! Check your email for ${data.digests_sent} digest${data.digests_sent !== 1 ? 's' : ''}.`);
       } else {
-        toast.info("No pending reminders to send right now");
+        toast.info("Daily digest sent! Check your email.");
       }
       fetchPlans(); // Refresh to update reminder_sent status
     } catch (error: any) {
@@ -190,6 +190,13 @@ const StudyPlanner = () => {
           <div className="ml-auto flex gap-2">
             <Button 
               variant="outline" 
+              onClick={() => navigate("/email-preferences")}
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Email Settings
+            </Button>
+            <Button 
+              variant="outline" 
               onClick={sendTestReminders}
               disabled={isSendingReminders}
             >
@@ -201,7 +208,7 @@ const StudyPlanner = () => {
               ) : (
                 <>
                   <Mail className="h-4 w-4 mr-2" />
-                  Send Reminders
+                  Send Now
                 </>
               )}
             </Button>

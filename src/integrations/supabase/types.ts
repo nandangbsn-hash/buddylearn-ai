@@ -44,6 +44,45 @@ export type Database = {
         }
         Relationships: []
       }
+      email_preferences: {
+        Row: {
+          created_at: string | null
+          daily_digest_enabled: boolean | null
+          digest_time: string | null
+          id: string
+          include_overdue: boolean | null
+          include_this_week: boolean | null
+          include_today: boolean | null
+          include_upcoming: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          daily_digest_enabled?: boolean | null
+          digest_time?: string | null
+          id?: string
+          include_overdue?: boolean | null
+          include_this_week?: boolean | null
+          include_today?: boolean | null
+          include_upcoming?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          daily_digest_enabled?: boolean | null
+          digest_time?: string | null
+          id?: string
+          include_overdue?: boolean | null
+          include_this_week?: boolean | null
+          include_today?: boolean | null
+          include_upcoming?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       homework_submissions: {
         Row: {
           description: string | null

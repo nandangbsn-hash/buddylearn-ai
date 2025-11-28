@@ -25,38 +25,43 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get ALL upcoming incomplete study plans (not just those due in 24 hours)
+    // Get ALL study plans (completed and incomplete, past and future) for comprehensive reporting
     const { data: plans, error: plansError } = await supabase
       .from('study_plans')
       .select(`
         *,
         subjects(name)
       `)
-      .eq('completed', false)
-      .gt('due_date', new Date().toISOString())
       .order('due_date', { ascending: true });
 
     if (plansError) throw plansError;
 
-    // Get user details for each plan
+    // Get user details and email preferences
     const userIds = [...new Set(plans?.map(p => p.user_id) || [])];
     const { data: profiles } = await supabase
       .from('profiles')
       .select('id, email, full_name')
       .in('id', userIds);
+    
+    const { data: emailPrefs } = await supabase
+      .from('email_preferences')
+      .select('*')
+      .in('user_id', userIds);
 
-    // Group plans by user
+    // Group plans by user (filter only incomplete plans for email)
     const plansByUser = new Map();
     for (const plan of plans || []) {
-      if (!plansByUser.has(plan.user_id)) {
-        plansByUser.set(plan.user_id, []);
+      if (!plan.completed) {
+        if (!plansByUser.has(plan.user_id)) {
+          plansByUser.set(plan.user_id, []);
+        }
+        plansByUser.get(plan.user_id).push(plan);
       }
-      plansByUser.get(plan.user_id).push(plan);
     }
 
     const results = [];
     
-    // Send one daily digest email per user with all their upcoming tasks
+    // Send one daily digest email per user with all their tasks
     for (const [userId, userPlans] of plansByUser.entries()) {
       try {
         const profile = profiles?.find(p => p.id === userId);
@@ -65,7 +70,14 @@ serve(async (req) => {
           continue;
         }
 
-        // Categorize tasks
+        // Get user email preferences
+        const userPrefs = emailPrefs?.find(p => p.user_id === userId);
+        if (userPrefs && !userPrefs.daily_digest_enabled) {
+          console.log(`Skipping user ${userId}: Daily digest disabled`);
+          continue;
+        }
+
+        // Categorize tasks based on user preferences
         const now = new Date();
         const overdueTasks: any[] = [];
         const todayTasks: any[] = [];
@@ -87,8 +99,14 @@ serve(async (req) => {
           }
         });
 
-        const renderTaskSection = (tasks: any[], title: string, color: string) => {
-          if (tasks.length === 0) return '';
+        // Apply user preferences filter
+        const includeOverdue = userPrefs?.include_overdue ?? true;
+        const includeToday = userPrefs?.include_today ?? true;
+        const includeWeek = userPrefs?.include_this_week ?? true;
+        const includeUpcoming = userPrefs?.include_upcoming ?? true;
+
+        const renderTaskSection = (tasks: any[], title: string, color: string, shouldInclude: boolean) => {
+          if (tasks.length === 0 || !shouldInclude) return '';
           
           return `
             <div style="margin: 20px 0;">
@@ -122,10 +140,10 @@ serve(async (req) => {
         };
 
         const taskListHtml = `
-          ${renderTaskSection(overdueTasks, '🚨 OVERDUE - Immediate Action Required', '#dc2626')}
-          ${renderTaskSection(todayTasks, '⏰ Due Today', '#f59e0b')}
-          ${renderTaskSection(thisWeekTasks, '📅 Due This Week', '#2563eb')}
-          ${renderTaskSection(laterTasks, '📋 Coming Up', '#6b7280')}
+          ${renderTaskSection(overdueTasks, '🚨 OVERDUE - Immediate Action Required', '#dc2626', includeOverdue)}
+          ${renderTaskSection(todayTasks, '⏰ Due Today', '#f59e0b', includeToday)}
+          ${renderTaskSection(thisWeekTasks, '📅 Due This Week', '#2563eb', includeWeek)}
+          ${renderTaskSection(laterTasks, '📋 Coming Up', '#6b7280', includeUpcoming)}
         `;
         
         // Send email with retry logic

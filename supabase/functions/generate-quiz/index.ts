@@ -49,42 +49,48 @@ Focus on key concepts, definitions, and important facts from the material.`;
       text: instruction
     });
 
-    // If there's a file, download and add it to the content
+    // If there's a file, download and add it to the content (only if it's an image)
     if (material.file_url && material.file_type) {
-      console.log('Downloading file:', material.file_url);
+      const isImage = material.file_type.startsWith('image/');
       
-      const urlParts = material.file_url.match(/\/storage\/v1\/object\/public\/([^\/]+)\/(.+)$/);
-      if (urlParts) {
-        const bucket = urlParts[1];
-        const path = urlParts[2];
+      if (isImage) {
+        console.log('Downloading image file:', material.file_url);
         
-        const { data: fileData, error: downloadError } = await supabase.storage
-          .from(bucket)
-          .download(path);
-        
-        if (!downloadError && fileData) {
-          const arrayBuffer = await fileData.arrayBuffer();
+        const urlParts = material.file_url.match(/\/storage\/v1\/object\/public\/([^\/]+)\/(.+)$/);
+        if (urlParts) {
+          const bucket = urlParts[1];
+          const path = urlParts[2];
           
-          // Convert to base64 in chunks to avoid stack overflow with large files
-          const uint8Array = new Uint8Array(arrayBuffer);
-          const chunkSize = 0x8000; // 32KB chunks
-          let binaryString = '';
+          const { data: fileData, error: downloadError } = await supabase.storage
+            .from(bucket)
+            .download(path);
           
-          for (let i = 0; i < uint8Array.length; i += chunkSize) {
-            const chunk = uint8Array.subarray(i, i + chunkSize);
-            binaryString += String.fromCharCode.apply(null, Array.from(chunk));
-          }
-          const base64 = btoa(binaryString);
-          
-          userContent.push({
-            type: "image_url",
-            image_url: {
-              url: `data:${fileData.type};base64,${base64}`
+          if (!downloadError && fileData) {
+            const arrayBuffer = await fileData.arrayBuffer();
+            
+            // Convert to base64 in chunks to avoid stack overflow with large files
+            const uint8Array = new Uint8Array(arrayBuffer);
+            const chunkSize = 0x8000; // 32KB chunks
+            let binaryString = '';
+            
+            for (let i = 0; i < uint8Array.length; i += chunkSize) {
+              const chunk = uint8Array.subarray(i, i + chunkSize);
+              binaryString += String.fromCharCode.apply(null, Array.from(chunk));
             }
-          });
-          
-          console.log('File added to quiz generation');
+            const base64 = btoa(binaryString);
+            
+            userContent.push({
+              type: "image_url",
+              image_url: {
+                url: `data:${fileData.type};base64,${base64}`
+              }
+            });
+            
+            console.log('Image file added to quiz generation');
+          }
         }
+      } else {
+        console.log(`Skipping non-image file (${material.file_type}). Using notes/content instead.`);
       }
     }
 

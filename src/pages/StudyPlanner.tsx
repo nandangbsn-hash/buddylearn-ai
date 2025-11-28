@@ -10,7 +10,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Calendar as CalendarIcon, CheckCircle2, Clock, Mail, Loader2, FileText, Settings } from "lucide-react";
+import { ArrowLeft, Plus, Calendar as CalendarIcon, CheckCircle2, Clock, Mail, FileText, Settings } from "lucide-react";
 import { PendingWorkReport } from "@/components/PendingWorkReport";
 import { format } from "date-fns";
 
@@ -20,7 +20,6 @@ const StudyPlanner = () => {
   const [subjects, setSubjects] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isSendingReminders, setIsSendingReminders] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -126,37 +125,6 @@ const StudyPlanner = () => {
     return daysWithPlans;
   };
 
-  const sendTestReminders = async () => {
-    setIsSendingReminders(true);
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-reminder`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to send reminders");
-
-      const data = await response.json();
-      if (data.digests_sent > 0) {
-        toast.success(`Daily digest sent successfully! Check your email for ${data.digests_sent} digest${data.digests_sent !== 1 ? 's' : ''}.`);
-      } else {
-        toast.info("Daily digest sent! Check your email.");
-      }
-      fetchPlans(); // Refresh to update reminder_sent status
-    } catch (error: any) {
-      console.error("Error sending reminders:", error);
-      toast.error(error.message || "Failed to send reminders");
-    } finally {
-      setIsSendingReminders(false);
-    }
-  };
-
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "high": return "text-destructive";
@@ -194,23 +162,6 @@ const StudyPlanner = () => {
             >
               <Settings className="h-4 w-4 mr-2" />
               Email Settings
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={sendTestReminders}
-              disabled={isSendingReminders}
-            >
-              {isSendingReminders ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Mail className="h-4 w-4 mr-2" />
-                  Send Now
-                </>
-              )}
             </Button>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>

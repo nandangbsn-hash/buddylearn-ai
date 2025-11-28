@@ -126,38 +126,47 @@ Then provide a brief explanation of each step below the diagram. Use clear, desc
           text: textContext
         });
         
-        // Add file if available
+        // Add file if available and it's an image
         if (material.file_url && material.file_type) {
-          const urlParts = material.file_url.match(/\/storage\/v1\/object\/public\/([^\/]+)\/(.+)$/);
-          if (urlParts) {
-            const bucket = urlParts[1];
-            const path = urlParts[2];
-            
-            const { data: fileData, error: downloadError } = await supabase.storage
-              .from(bucket)
-              .download(path);
-            
-            if (!downloadError && fileData) {
-              const arrayBuffer = await fileData.arrayBuffer();
+          // Only process actual image files
+          const isImage = material.file_type.startsWith('image/');
+          
+          if (isImage) {
+            const urlParts = material.file_url.match(/\/storage\/v1\/object\/public\/([^\/]+)\/(.+)$/);
+            if (urlParts) {
+              const bucket = urlParts[1];
+              const path = urlParts[2];
               
-              // Convert to base64 in chunks to avoid stack overflow with large files
-              const uint8Array = new Uint8Array(arrayBuffer);
-              const chunkSize = 0x8000; // 32KB chunks
-              let binaryString = '';
+              const { data: fileData, error: downloadError } = await supabase.storage
+                .from(bucket)
+                .download(path);
               
-              for (let i = 0; i < uint8Array.length; i += chunkSize) {
-                const chunk = uint8Array.subarray(i, i + chunkSize);
-                binaryString += String.fromCharCode.apply(null, Array.from(chunk));
-              }
-              const base64 = btoa(binaryString);
-              
-              contextParts.push({
-                type: "image_url",
-                image_url: {
-                  url: `data:${fileData.type};base64,${base64}`
+              if (!downloadError && fileData) {
+                const arrayBuffer = await fileData.arrayBuffer();
+                
+                // Convert to base64 in chunks to avoid stack overflow with large files
+                const uint8Array = new Uint8Array(arrayBuffer);
+                const chunkSize = 0x8000; // 32KB chunks
+                let binaryString = '';
+                
+                for (let i = 0; i < uint8Array.length; i += chunkSize) {
+                  const chunk = uint8Array.subarray(i, i + chunkSize);
+                  binaryString += String.fromCharCode.apply(null, Array.from(chunk));
                 }
-              });
+                const base64 = btoa(binaryString);
+                
+                contextParts.push({
+                  type: "image_url",
+                  image_url: {
+                    url: `data:${fileData.type};base64,${base64}`
+                  }
+                });
+              }
             }
+          } else {
+            // For non-image files (PDFs, etc.), add a note
+            textContext += `\n\n[Note: A ${material.file_type} file is attached but cannot be directly analyzed. Please refer to the notes above or provide text content for analysis.]`;
+            contextParts[0].text = textContext;
           }
         }
         

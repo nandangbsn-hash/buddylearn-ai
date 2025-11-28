@@ -266,13 +266,20 @@ const Materials = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="content">Additional Notes (Optional)</Label>
+                  <Label htmlFor="content">
+                    Additional Notes 
+                    {fileType === 'application/pdf' && <span className="text-destructive"> (Required for PDFs)</span>}
+                  </Label>
                   <p className="text-xs text-muted-foreground">
-                    Add any extra notes or context. AI will analyze your uploaded file directly.
+                    {fileType === 'application/pdf' 
+                      ? '⚠️ PDFs cannot be directly analyzed by AI. Please add text notes or key points from your PDF here.'
+                      : 'Add any extra notes or context. AI will analyze your uploaded file directly (images only).'}
                   </p>
                   <Textarea
                     id="content"
-                    placeholder="Add optional notes to complement your uploaded file..."
+                    placeholder={fileType === 'application/pdf' 
+                      ? "Add notes, key points, or summary from your PDF..."
+                      : "Add optional notes to complement your uploaded file..."}
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     rows={6}

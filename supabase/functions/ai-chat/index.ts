@@ -197,7 +197,18 @@ Then provide a brief explanation of each step below the diagram. Use clear, desc
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      throw new Error(`AI API error: ${response.status}`);
+      if (response.status === 503) {
+        return new Response(JSON.stringify({ error: "AI service temporarily unavailable. Please try again in a moment." }), {
+          status: 503,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const errorText = await response.text().catch(() => 'Unknown error');
+      console.error('AI API error:', response.status, errorText);
+      return new Response(JSON.stringify({ error: `AI service error (${response.status}). Please try again.` }), {
+        status: response.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     return new Response(response.body, {

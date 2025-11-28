@@ -20,7 +20,7 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Generate summary and key points using Lovable AI
+    // Generate summary and key points using Lovable AI with structured output
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -42,16 +42,40 @@ serve(async (req) => {
 3. List of main topics/concepts covered
 
 Material:
-${content}
-
-Respond in JSON format:
-{
-  "summary": "brief summary",
-  "key_points": ["point 1", "point 2", ...],
-  "topics": ["topic 1", "topic 2", ...]
-}`
+${content}`
           }
-        ]
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "analyze_material",
+              description: "Analyze study material and extract summary, key points, and topics",
+              parameters: {
+                type: "object",
+                properties: {
+                  summary: {
+                    type: "string",
+                    description: "A concise summary of the material (2-3 sentences)"
+                  },
+                  key_points: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "5-7 key points from the material"
+                  },
+                  topics: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "Main topics/concepts covered"
+                  }
+                },
+                required: ["summary", "key_points", "topics"],
+                additionalProperties: false
+              }
+            }
+          }
+        ],
+        tool_choice: { type: "function", function: { name: "analyze_material" } }
       })
     });
 
@@ -60,7 +84,15 @@ Respond in JSON format:
     }
 
     const aiData = await aiResponse.json();
-    const result = JSON.parse(aiData.choices[0].message.content);
+    console.log("AI Response:", JSON.stringify(aiData, null, 2));
+    
+    // Extract structured output from tool call
+    const toolCall = aiData.choices[0].message.tool_calls?.[0];
+    if (!toolCall) {
+      throw new Error("No tool call returned from AI");
+    }
+    
+    const result = JSON.parse(toolCall.function.arguments);
 
     // Save summary to database
     const { error: summaryError } = await supabase

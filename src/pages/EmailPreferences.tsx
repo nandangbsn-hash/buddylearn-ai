@@ -145,7 +145,7 @@ const EmailPreferences = () => {
             <div className="space-y-2">
               <Label htmlFor="digest-time" className="text-base font-semibold flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                Delivery Time
+                Delivery Time (UTC)
               </Label>
               <p className="text-sm text-muted-foreground mb-2">
                 Choose what time you want to receive your daily digest
@@ -160,6 +160,9 @@ const EmailPreferences = () => {
                 disabled={!preferences.daily_digest_enabled}
                 className="max-w-xs"
               />
+              <p className="text-xs text-muted-foreground">
+                ⓘ Time is in UTC. Your local time may differ based on your timezone.
+              </p>
             </div>
 
             <div className="border-t pt-6">

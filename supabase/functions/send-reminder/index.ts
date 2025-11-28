@@ -19,6 +19,12 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Starting reminder sending process...');
+
+    // Get current hour in UTC
+    const currentHour = new Date().getUTCHours();
+    console.log(`Current UTC hour: ${currentHour}:00`);
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const resendKey = Deno.env.get('RESEND_API')!;
@@ -75,6 +81,15 @@ serve(async (req) => {
         if (userPrefs && !userPrefs.daily_digest_enabled) {
           console.log(`Skipping user ${userId}: Daily digest disabled`);
           continue;
+        }
+
+        // Check if current hour matches user's preferred delivery time
+        if (userPrefs?.digest_time) {
+          const prefHour = parseInt(userPrefs.digest_time.split(':')[0]);
+          if (prefHour !== currentHour) {
+            console.log(`Skipping user ${userId}: Not their preferred time (wants ${prefHour}:00, current is ${currentHour}:00 UTC)`);
+            continue;
+          }
         }
 
         // Categorize tasks based on user preferences

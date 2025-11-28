@@ -102,15 +102,35 @@ const EmailPreferences = () => {
       const currentHour = new Date().getUTCHours();
       const testTime = `${currentHour.toString().padStart(2, '0')}:00:00`;
       
-      await supabase
+      const { error: updateError } = await supabase
         .from("email_preferences")
         .update({ digest_time: testTime })
         .eq("user_id", user.id);
+
+      if (updateError) {
+        console.error("Error updating digest time:", updateError);
+        toast.error("Failed to update preferences");
+        return;
+      }
+
+      // Wait a moment to ensure database update propagates
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Verify the update was successful
+      const { data: verifyData } = await supabase
+        .from("email_preferences")
+        .select("digest_time")
+        .eq("user_id", user.id)
+        .single();
+
+      console.log("Verified digest_time:", verifyData?.digest_time);
 
       // Trigger the send-reminder function
       const { data, error } = await supabase.functions.invoke('send-reminder', {
         body: {}
       });
+
+      console.log("Edge function response:", data, error);
 
       // Restore original time
       await supabase
@@ -120,10 +140,11 @@ const EmailPreferences = () => {
 
       if (error) {
         console.error("Error sending test email:", error);
-        toast.error("Failed to send test email");
+        toast.error(`Failed to send test email: ${error.message}`);
       } else if (data?.digests_sent > 0) {
         toast.success("Test email sent successfully! Check your inbox.");
       } else {
+        console.log("Function response details:", data);
         toast.info("No pending tasks to send. Add some incomplete study plans first.");
       }
     } catch (error) {

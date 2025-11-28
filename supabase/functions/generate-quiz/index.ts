@@ -20,20 +20,63 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get material content
+    // Get material with file info
     const { data: material, error: materialError } = await supabase
       .from('materials')
-      .select('content, title, user_id')
+      .select('content, title, user_id, file_url, file_type')
       .eq('id', materialId)
       .single();
 
     if (materialError) throw materialError;
 
-    if (!material.content || material.content.trim().length < 50) {
-      throw new Error('Material does not have enough content to generate a quiz. Please add your study notes to this material first.');
-    }
+    console.log(`Generating quiz for material: "${material.title}"`);
 
-    console.log(`Generating quiz for material: "${material.title}" with ${material.content.length} characters of content`);
+    // Prepare the AI message content
+    let userContent: any[] = [];
+    
+    // Add text instruction
+    const instruction = `Create ${numQuestions} multiple-choice questions based on this study material.
+Difficulty: ${difficulty}
+Material Title: "${material.title}"
+
+${material.content ? `Additional Notes:\n${material.content}\n\n` : ''}
+
+Generate questions with 4 options each, marking the correct answer index (0-3).
+Focus on key concepts, definitions, and important facts from the material.`;
+
+    userContent.push({
+      type: "text",
+      text: instruction
+    });
+
+    // If there's a file, download and add it to the content
+    if (material.file_url && material.file_type) {
+      console.log('Downloading file:', material.file_url);
+      
+      const urlParts = material.file_url.match(/\/storage\/v1\/object\/public\/([^\/]+)\/(.+)$/);
+      if (urlParts) {
+        const bucket = urlParts[1];
+        const path = urlParts[2];
+        
+        const { data: fileData, error: downloadError } = await supabase.storage
+          .from(bucket)
+          .download(path);
+        
+        if (!downloadError && fileData) {
+          const arrayBuffer = await fileData.arrayBuffer();
+          const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+          
+          userContent.push({
+            type: "image_url",
+            image_url: {
+              url: `data:${fileData.type};base64,${base64}`
+            }
+          });
+          
+          console.log('File added to quiz generation');
+        }
+      }
+    }
 
     // Generate quiz using Lovable AI with structured output
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -47,23 +90,11 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: "You are an expert quiz creator. Generate educational multiple-choice questions based STRICTLY on the provided study material. Every question must be directly answerable from the material content."
+            content: "You are an expert quiz creator. Generate educational multiple-choice questions based on the provided study material (which may include images, PDFs, or text). Analyze all provided content thoroughly."
           },
           {
             role: "user",
-            content: `Create ${numQuestions} multiple-choice questions based ONLY on this study material.
-Difficulty: ${difficulty}
-
-Study Material Title: "${material.title}"
-
-Material Content:
-${material.content}
-
-Important: 
-- All questions must be directly answerable from the content above
-- Do not include general knowledge questions
-- Focus on key concepts, definitions, and important facts from the material
-- Generate questions with 4 options each, marking the correct answer index (0-3)`
+            content: userContent
           }
         ],
         tools: [

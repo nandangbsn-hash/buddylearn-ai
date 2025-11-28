@@ -198,17 +198,9 @@ const Materials = () => {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <FileUpload
-                  onUploadComplete={(url, type, extractedText) => {
+                  onUploadComplete={(url, type) => {
                     setFileUrl(url);
                     setFileType(type);
-                    if (extractedText) {
-                      // Combine extracted content with existing notes
-                      const combinedContent = content 
-                        ? `${content}\n\n--- Extracted from ${type === 'link' ? 'link' : 'file'} ---\n\n${extractedText}`
-                        : extractedText;
-                      setContent(combinedContent);
-                      toast.info("Extracted content added to the content field. You can edit or add more notes!");
-                    }
                   }}
                 />
 
@@ -274,17 +266,16 @@ const Materials = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="content">Content / Notes *</Label>
+                  <Label htmlFor="content">Additional Notes (Optional)</Label>
                   <p className="text-xs text-muted-foreground">
-                    Content from uploaded files/links will be automatically extracted here. You can add your own notes too!
+                    Add any extra notes or context. AI will analyze your uploaded file directly.
                   </p>
                   <Textarea
                     id="content"
-                    placeholder="Paste your notes or study content here... (or upload a file to auto-extract content)"
+                    placeholder="Add optional notes to complement your uploaded file..."
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
-                    rows={8}
-                    required
+                    rows={6}
                   />
                 </div>
 
@@ -339,38 +330,27 @@ const Materials = () => {
                          Topic: {material.topic}
                        </p>
                      )}
-                     {material.content && material.content.trim().length > 50 ? (
-                       <>
-                         <p className="text-sm line-clamp-3 mb-4">{material.content}</p>
-                         <div className="flex gap-2">
-                           <Button 
-                             size="sm" 
-                             variant="outline"
-                             onClick={() => navigate(`/quizzes?materialId=${material.id}`)}
-                           >
-                             <Sparkles className="h-4 w-4 mr-2" />
-                             Generate Quiz
-                           </Button>
-                           <Button 
-                             size="sm" 
-                             variant="ghost"
-                             onClick={() => navigate(`/ai-chat`)}
-                           >
-                             <Brain className="h-4 w-4 mr-2" />
-                             Ask AI
-                           </Button>
-                         </div>
-                       </>
-                     ) : (
-                       <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-                         <p className="text-sm text-amber-800 dark:text-amber-200 mb-3">
-                           ⚠️ This material needs content! Add your study notes or copy text from your document so the AI can create quizzes and answer questions.
-                         </p>
-                         <p className="text-xs text-muted-foreground">
-                           Note: If you uploaded a file/link, you'll need to manually copy and paste the content until automatic extraction is fully supported.
-                         </p>
-                       </div>
+                     {material.content && (
+                       <p className="text-sm line-clamp-3 mb-4">{material.content}</p>
                      )}
+                     <div className="flex gap-2">
+                       <Button 
+                         size="sm" 
+                         variant="outline"
+                         onClick={() => navigate(`/quizzes?materialId=${material.id}`)}
+                       >
+                         <Sparkles className="h-4 w-4 mr-2" />
+                         Generate Quiz
+                       </Button>
+                       <Button 
+                         size="sm" 
+                         variant="ghost"
+                         onClick={() => navigate(`/ai-chat?materialId=${material.id}`)}
+                       >
+                         <Brain className="h-4 w-4 mr-2" />
+                         Ask AI
+                       </Button>
+                     </div>
                    </CardContent>
                 </Card>
               ))

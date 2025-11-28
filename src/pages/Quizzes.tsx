@@ -32,25 +32,6 @@ const Quizzes = () => {
   const generateQuiz = async () => {
     setIsGenerating(true);
     try {
-      // First check if material has content
-      const { data: material, error: matError } = await supabase
-        .from('materials')
-        .select('content, title, file_url, file_type')
-        .eq('id', materialId)
-        .single();
-
-      if (matError) throw matError;
-      
-      if (!material?.content || material.content.trim().length < 50) {
-        toast.error(
-          `This material needs more detailed content! Current: "${material?.content?.substring(0, 50)}..."\n\n` +
-          `To fix: Go back to Materials and edit this item to add comprehensive study notes about ${material?.title || 'this topic'}.`,
-          { duration: 8000 }
-        );
-        setIsGenerating(false);
-        return;
-      }
-
       const { data, error } = await supabase.functions.invoke('generate-quiz', {
         body: { materialId, numQuestions: 5, difficulty: 'medium' }
       });
@@ -62,11 +43,7 @@ const Quizzes = () => {
       }
     } catch (error: any) {
       console.error('Quiz generation error:', error);
-      if (error.message?.includes('enough content')) {
-        toast.error("Please go back and add detailed study notes to this material before generating a quiz.", { duration: 6000 });
-      } else {
-        toast.error(error.message || "Failed to generate quiz");
-      }
+      toast.error(error.message || "Failed to generate quiz");
     } finally {
       setIsGenerating(false);
     }

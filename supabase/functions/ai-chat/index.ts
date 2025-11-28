@@ -126,12 +126,13 @@ Then provide a brief explanation of each step below the diagram. Use clear, desc
           text: textContext
         });
         
-        // Add file if available and it's an image
+        // Add file if available (images or PDFs)
         if (material.file_url && material.file_type) {
-          // Only process actual image files
+          // Process images and PDFs
           const isImage = material.file_type.startsWith('image/');
+          const isPDF = material.file_type === 'application/pdf';
           
-          if (isImage) {
+          if (isImage || isPDF) {
             const urlParts = material.file_url.match(/\/storage\/v1\/object\/public\/([^\/]+)\/(.+)$/);
             if (urlParts) {
               const bucket = urlParts[1];
@@ -164,7 +165,7 @@ Then provide a brief explanation of each step below the diagram. Use clear, desc
               }
             }
           } else {
-            // For non-image files (PDFs, etc.), add a note
+            // For non-image/PDF files, add a note
             textContext += `\n\n[Note: A ${material.file_type} file is attached but cannot be directly analyzed. Please refer to the notes above or provide text content for analysis.]`;
             contextParts[0].text = textContext;
           }

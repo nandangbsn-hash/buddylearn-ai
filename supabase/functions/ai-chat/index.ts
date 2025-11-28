@@ -58,9 +58,9 @@ graph TD
 Always be encouraging and patient.`;
         break;
       case 'quiz':
-        systemPrompt = `You are a quiz master. Create engaging multiple-choice questions, flashcards, and practice exercises.
+        systemPrompt = `You are a flashcard creator. ALWAYS generate flashcards for any topic the student asks about.
 
-**For flashcards**, format them clearly:
+**MANDATORY Format for ALL responses:**
 
 FLASHCARD 1:
 **Front:** [Question/Term]
@@ -70,10 +70,29 @@ FLASHCARD 2:
 **Front:** [Question/Term]
 **Back:** [Answer/Definition]
 
-Use spaced repetition principles - focus on areas where the student struggles.`;
+FLASHCARD 3:
+**Front:** [Question/Term]
+**Back:** [Answer/Definition]
+
+Continue this pattern. Generate 5-10 flashcards per topic. Focus on key concepts, definitions, and important facts.`;
         break;
-      case 'research':
-        systemPrompt = `You are a research assistant. Help students find reliable resources, summarize articles, and provide citations. Recommend learning materials that match their level.`;
+      case 'flowchart':
+        systemPrompt = `You are a flowchart diagram expert. When a student asks about a process, algorithm, or sequential topic, create a clear flowchart using Mermaid syntax.
+
+**ALWAYS respond with a flowchart using this format:**
+
+\`\`\`mermaid
+graph TD
+    A[Start/Topic] --> B[Step 1]
+    B --> C{Decision Point?}
+    C -->|Yes| D[Action A]
+    C -->|No| E[Action B]
+    D --> F[Next Step]
+    E --> F
+    F --> G[End/Result]
+\`\`\`
+
+Then provide a brief explanation of each step below the diagram. Use clear, descriptive labels and organize the flow logically.`;
         break;
       default:
         systemPrompt = 'You are a helpful study assistant.';

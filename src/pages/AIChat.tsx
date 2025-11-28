@@ -142,8 +142,8 @@ const AIChat = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="explain">Explain Concepts</SelectItem>
-              <SelectItem value="quiz">Quiz Me</SelectItem>
-              <SelectItem value="research">Research Helper</SelectItem>
+              <SelectItem value="quiz">Flashcards</SelectItem>
+              <SelectItem value="flowchart">Flowchart</SelectItem>
             </SelectContent>
           </Select>
 

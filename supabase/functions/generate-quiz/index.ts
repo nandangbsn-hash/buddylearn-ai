@@ -49,12 +49,13 @@ Focus on key concepts, definitions, and important facts from the material.`;
       text: instruction
     });
 
-    // If there's a file, download and add it to the content (only if it's an image)
+    // If there's a file, download and add it to the content (images or PDFs)
     if (material.file_url && material.file_type) {
       const isImage = material.file_type.startsWith('image/');
+      const isPDF = material.file_type === 'application/pdf';
       
-      if (isImage) {
-        console.log('Downloading image file:', material.file_url);
+      if (isImage || isPDF) {
+        console.log('Downloading file:', material.file_url, 'Type:', material.file_type);
         
         const urlParts = material.file_url.match(/\/storage\/v1\/object\/public\/([^\/]+)\/(.+)$/);
         if (urlParts) {
@@ -86,11 +87,11 @@ Focus on key concepts, definitions, and important facts from the material.`;
               }
             });
             
-            console.log('Image file added to quiz generation');
+            console.log('File added to quiz generation');
           }
         }
       } else {
-        console.log(`Skipping non-image file (${material.file_type}). Using notes/content instead.`);
+        console.log(`Skipping unsupported file type (${material.file_type}). Using notes/content instead.`);
       }
     }
 

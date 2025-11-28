@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +13,7 @@ type Message = { role: "user" | "assistant"; content: string };
 
 const AIChat = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -23,7 +24,12 @@ const AIChat = () => {
 
   useEffect(() => {
     fetchMaterials();
-  }, []);
+    // Auto-select material from URL if provided
+    const materialIdFromUrl = searchParams.get("materialId");
+    if (materialIdFromUrl) {
+      setSelectedMaterial(materialIdFromUrl);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -48,23 +54,6 @@ const AIChat = () => {
     setIsLoading(true);
 
     try {
-      let context = "";
-      if (selectedMaterial) {
-        const { data } = await supabase
-          .from("materials")
-          .select("content, title")
-          .eq("id", selectedMaterial)
-          .single();
-        if (data) {
-          if (!data.content || data.content.trim().length < 50) {
-            toast.error("This material doesn't have enough content. Please edit it and add your study notes!");
-            setIsLoading(false);
-            return;
-          }
-          context = `Study Material: "${data.title}"\n\nContent:\n${data.content}`;
-        }
-      }
-
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`,
         {
@@ -75,7 +64,7 @@ const AIChat = () => {
           },
           body: JSON.stringify({
             messages: [...messages, userMessage],
-            context,
+            materialId: selectedMaterial || undefined,
             mode,
           }),
         }
@@ -171,9 +160,14 @@ const AIChat = () => {
           </Select>
           
           {selectedMaterial && (
-            <p className="text-xs text-muted-foreground">
-              💡 The AI will use the content from the selected material to answer your questions
-            </p>
+            <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
+              <p className="text-sm font-semibold text-primary">
+                📚 Selected: {materials.find(m => m.id === selectedMaterial)?.title}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                AI will analyze your uploaded file and any notes you added
+              </p>
+            </div>
           )}
         </div>
 

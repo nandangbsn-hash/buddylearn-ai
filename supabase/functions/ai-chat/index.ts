@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.86.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,8 +12,13 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, context, mode = 'explain' } = await req.json();
+    const { messages, materialId, mode = 'explain' } = await req.json();
+    
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')!;
+    
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     let systemPrompt = '';
     
@@ -73,11 +79,68 @@ Use spaced repetition principles - focus on areas where the student struggles.`;
         systemPrompt = 'You are a helpful study assistant.';
     }
 
-    const aiMessages = [
-      { role: "system", content: systemPrompt },
-      ...(context ? [{ role: "system", content: `Study material context:\n${context}` }] : []),
-      ...messages
+    // Prepare AI messages with material context
+    const aiMessages: any[] = [
+      { role: "system", content: systemPrompt }
     ];
+    
+    // If materialId is provided, fetch and include the material
+    if (materialId) {
+      const { data: material } = await supabase
+        .from('materials')
+        .select('content, title, file_url, file_type')
+        .eq('id', materialId)
+        .single();
+      
+      if (material) {
+        // Build context message with file if available
+        const contextParts: any[] = [];
+        
+        // Add text context
+        let textContext = `Study Material: "${material.title}"`;
+        if (material.content) {
+          textContext += `\n\nNotes:\n${material.content}`;
+        }
+        
+        contextParts.push({
+          type: "text",
+          text: textContext
+        });
+        
+        // Add file if available
+        if (material.file_url && material.file_type) {
+          const urlParts = material.file_url.match(/\/storage\/v1\/object\/public\/([^\/]+)\/(.+)$/);
+          if (urlParts) {
+            const bucket = urlParts[1];
+            const path = urlParts[2];
+            
+            const { data: fileData, error: downloadError } = await supabase.storage
+              .from(bucket)
+              .download(path);
+            
+            if (!downloadError && fileData) {
+              const arrayBuffer = await fileData.arrayBuffer();
+              const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+              
+              contextParts.push({
+                type: "image_url",
+                image_url: {
+                  url: `data:${fileData.type};base64,${base64}`
+                }
+              });
+            }
+          }
+        }
+        
+        aiMessages.push({
+          role: "system",
+          content: contextParts
+        });
+      }
+    }
+    
+    // Add user messages
+    aiMessages.push(...messages);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

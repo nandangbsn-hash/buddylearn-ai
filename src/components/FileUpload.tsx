@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Upload, Loader2, Link as LinkIcon } from "lucide-react";
 
 interface FileUploadProps {
-  onUploadComplete: (fileUrl: string, fileType: string, extractedText?: string) => void;
+  onUploadComplete: (fileUrl: string, fileType: string) => void;
 }
 
 export const FileUpload = ({ onUploadComplete }: FileUploadProps) => {
@@ -46,24 +46,8 @@ export const FileUpload = ({ onUploadComplete }: FileUploadProps) => {
         fileType = 'document';
       }
 
-      toast.success("File uploaded! Extracting content...");
-      
-      // Extract content from the uploaded file
-      const { data: extractData, error: extractError } = await supabase.functions.invoke('extract-content', {
-        body: { url: publicUrl, fileType }
-      });
-
-      if (extractError) {
-        console.error('Extract error:', extractError);
-        toast.warning("File uploaded but couldn't extract text automatically. Please add detailed notes about what's in this image.");
-        onUploadComplete(publicUrl, fileType);
-      } else if (extractData.content && extractData.content.length > 100) {
-        toast.success("Content extracted successfully from image!");
-        onUploadComplete(publicUrl, fileType, extractData.content);
-      } else {
-        toast.warning("File uploaded. Please add detailed notes about what's in this image.");
-        onUploadComplete(publicUrl, fileType, extractData.content || '');
-      }
+      toast.success("File uploaded successfully!");
+      onUploadComplete(publicUrl, fileType);
     } catch (error: any) {
       console.error('Upload error:', error);
       toast.error(error.message || "Failed to upload file");
@@ -77,27 +61,11 @@ export const FileUpload = ({ onUploadComplete }: FileUploadProps) => {
     
     try {
       new URL(url); // Validate URL
-      setIsUploading(true);
-      toast.info("Fetching content from link...");
-      
-      // Extract content from the URL
-      const { data: extractData, error: extractError } = await supabase.functions.invoke('extract-content', {
-        body: { url, fileType: 'link' }
-      });
-
-      if (extractError) {
-        console.error('Extract error:', extractError);
-        toast.warning("Link added but couldn't extract content. You can add notes manually.");
-        onUploadComplete(url, 'link');
-      } else {
-        toast.success("Content extracted from link!");
-        onUploadComplete(url, 'link', extractData.content);
-      }
+      toast.success("Link added successfully!");
+      onUploadComplete(url, 'link');
       setUrl("");
     } catch (error) {
       toast.error("Please enter a valid URL");
-    } finally {
-      setIsUploading(false);
     }
   };
 

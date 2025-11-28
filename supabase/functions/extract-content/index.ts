@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,6 +14,11 @@ serve(async (req) => {
   try {
     const { url, fileType } = await req.json();
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')!;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    // Create Supabase client with service role for storage access
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
     console.log('Extracting content from:', url, 'type:', fileType);
     let extractedContent = '';
@@ -62,29 +68,37 @@ serve(async (req) => {
       // Extract content from PDFs, documents, and images using AI vision
       try {
         console.log('Extracting from file:', url, 'type:', fileType);
-        console.log('Starting file fetch...');
+        console.log('Starting authenticated file fetch...');
         
-        // Fetch the file with proper headers and longer timeout
-        const fileResponse = await fetch(url, {
-          headers: {
-            'User-Agent': 'Buddy-Study-App/1.0',
-            'Accept': '*/*'
-          }
-        });
-        
-        console.log('File response status:', fileResponse.status, fileResponse.statusText);
-        console.log('File response headers:', Object.fromEntries(fileResponse.headers.entries()));
-        
-        if (!fileResponse.ok) {
-          console.error('File fetch failed:', fileResponse.status, fileResponse.statusText);
-          throw new Error(`Could not fetch file: ${fileResponse.status} ${fileResponse.statusText}`);
+        // Extract bucket and path from the URL
+        const urlParts = url.match(/\/storage\/v1\/object\/public\/([^\/]+)\/(.+)$/);
+        if (!urlParts) {
+          throw new Error('Invalid storage URL format');
         }
         
-        const fileBlob = await fileResponse.blob();
-        const arrayBuffer = await fileBlob.arrayBuffer();
-        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+        const bucket = urlParts[1];
+        const path = urlParts[2];
         
-        console.log('File fetched successfully, size:', fileBlob.size, 'type:', fileBlob.type);
+        console.log('Downloading from bucket:', bucket, 'path:', path);
+        
+        // Download file using Supabase client with service role
+        const { data: fileData, error: downloadError } = await supabase.storage
+          .from(bucket)
+          .download(path);
+        
+        if (downloadError) {
+          console.error('Storage download error:', downloadError);
+          throw new Error(`Storage download failed: ${downloadError.message}`);
+        }
+        
+        if (!fileData) {
+          throw new Error('No file data received from storage');
+        }
+        
+        console.log('File downloaded successfully, size:', fileData.size, 'type:', fileData.type);
+        
+        const arrayBuffer = await fileData.arrayBuffer();
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
         
         // Determine the appropriate prompt based on file type
         let extractionPrompt = '';
@@ -116,7 +130,7 @@ serve(async (req) => {
                   {
                     type: "image_url",
                     image_url: {
-                      url: `data:${fileBlob.type};base64,${base64}`
+                      url: `data:${fileData.type};base64,${base64}`
                     }
                   }
                 ]

@@ -10,7 +10,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Calendar as CalendarIcon, CheckCircle2, Clock, Mail, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Calendar as CalendarIcon, CheckCircle2, Clock, Mail, Loader2, FileText } from "lucide-react";
+import { PendingWorkReport } from "@/components/PendingWorkReport";
 import { format } from "date-fns";
 
 const StudyPlanner = () => {
@@ -118,7 +119,9 @@ const StudyPlanner = () => {
 
   const getCalendarDaysWithPlans = () => {
     const daysWithPlans = new Set(
-      plans.filter(p => isValidDate(p.due_date)).map(plan => format(new Date(plan.due_date), "yyyy-MM-dd"))
+      plans
+        .filter(p => !p.completed && isValidDate(p.due_date) && new Date(p.due_date) > new Date())
+        .map(plan => format(new Date(plan.due_date), "yyyy-MM-dd"))
     );
     return daysWithPlans;
   };
@@ -379,6 +382,11 @@ const StudyPlanner = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Pending Work Report */}
+          <div className="md:col-span-2">
+            <PendingWorkReport plans={plans} />
+          </div>
 
           {/* All upcoming plans */}
           <Card className="md:col-span-2">

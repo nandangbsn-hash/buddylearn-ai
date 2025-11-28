@@ -81,6 +81,7 @@ const AIChat = () => {
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let assistantMessage = "";
+      let textBuffer = "";
 
       if (reader) {
         setMessages(prev => [...prev, { role: "assistant", content: "" }]);
@@ -89,12 +90,23 @@ const AIChat = () => {
           const { done, value } = await reader.read();
           if (done) break;
 
-          const chunk = decoder.decode(value);
-          const lines = chunk.split("\n");
+          // Append new chunk to buffer
+          textBuffer += decoder.decode(value, { stream: true });
 
-          for (const line of lines) {
+          // Process complete lines
+          let newlineIndex: number;
+          while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+            let line = textBuffer.slice(0, newlineIndex);
+            textBuffer = textBuffer.slice(newlineIndex + 1);
+
+            // Handle CRLF
+            if (line.endsWith("\r")) line = line.slice(0, -1);
+            
+            // Skip comments and empty lines
+            if (line.startsWith(":") || line.trim() === "") continue;
+            
             if (line.startsWith("data: ")) {
-              const data = line.slice(6);
+              const data = line.slice(6).trim();
               if (data === "[DONE]") continue;
               
               try {
@@ -110,6 +122,34 @@ const AIChat = () => {
                 }
               } catch (e) {
                 // Skip invalid JSON
+                console.error('Failed to parse SSE chunk:', data);
+              }
+            }
+          }
+        }
+
+        // Flush any remaining buffer
+        if (textBuffer.trim()) {
+          const lines = textBuffer.split("\n");
+          for (let line of lines) {
+            if (line.endsWith("\r")) line = line.slice(0, -1);
+            if (line.startsWith(":") || line.trim() === "") continue;
+            if (line.startsWith("data: ")) {
+              const data = line.slice(6).trim();
+              if (data === "[DONE]") continue;
+              try {
+                const parsed = JSON.parse(data);
+                const content = parsed.choices?.[0]?.delta?.content;
+                if (content) {
+                  assistantMessage += content;
+                  setMessages(prev => {
+                    const newMessages = [...prev];
+                    newMessages[newMessages.length - 1].content = assistantMessage;
+                    return newMessages;
+                  });
+                }
+              } catch (e) {
+                console.error('Failed to parse final SSE chunk:', data);
               }
             }
           }

@@ -14,12 +14,13 @@ export const MermaidDiagram = ({ chart }: MermaidDiagramProps) => {
 
   useEffect(() => {
     mermaid.initialize({
-      startOnLoad: true,
+      startOnLoad: false,
       theme: "default",
       securityLevel: "loose",
       flowchart: {
-        useMaxWidth: false,
+        useMaxWidth: true,
         htmlLabels: true,
+        curve: "basis",
       },
     });
   }, []);
@@ -30,12 +31,20 @@ export const MermaidDiagram = ({ chart }: MermaidDiagramProps) => {
 
       try {
         setError(null);
+        
+        // Clean up the chart text - remove any extra whitespace and ensure proper formatting
+        const cleanChart = chart.trim();
+        
         const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
-        const { svg } = await mermaid.render(id, chart);
+        
+        // Clear container first
+        containerRef.current.innerHTML = '';
+        
+        const { svg } = await mermaid.render(id, cleanChart);
         containerRef.current.innerHTML = svg;
-      } catch (err) {
+      } catch (err: any) {
         console.error("Mermaid render error:", err);
-        setError("Failed to render diagram");
+        setError(err.message || "Failed to render diagram. The diagram syntax may be invalid.");
       }
     };
 

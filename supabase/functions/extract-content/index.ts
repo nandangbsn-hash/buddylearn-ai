@@ -62,13 +62,18 @@ serve(async (req) => {
       // Extract content from PDFs, documents, and images using AI vision
       try {
         console.log('Extracting from file:', url, 'type:', fileType);
+        console.log('Starting file fetch...');
         
-        // Fetch the file with proper headers
+        // Fetch the file with proper headers and longer timeout
         const fileResponse = await fetch(url, {
           headers: {
-            'User-Agent': 'Buddy-Study-App/1.0'
+            'User-Agent': 'Buddy-Study-App/1.0',
+            'Accept': '*/*'
           }
         });
+        
+        console.log('File response status:', fileResponse.status, fileResponse.statusText);
+        console.log('File response headers:', Object.fromEntries(fileResponse.headers.entries()));
         
         if (!fileResponse.ok) {
           console.error('File fetch failed:', fileResponse.status, fileResponse.statusText);
@@ -91,6 +96,7 @@ serve(async (req) => {
           extractionPrompt = 'Extract ALL visible text from this image (perform OCR on any text you see). Then describe in detail what the image shows - include all educational content, diagrams, charts, tables, or visual information. Format as clear markdown with headings and bullet points. Be comprehensive - this will be used as study material.';
         }
         
+        console.log('Sending to AI for extraction...');
         const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -118,6 +124,8 @@ serve(async (req) => {
             ]
           })
         });
+        
+        console.log('AI response status:', aiResponse.status);
 
         if (!aiResponse.ok) {
           console.error('AI vision error:', aiResponse.status);

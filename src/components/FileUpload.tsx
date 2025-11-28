@@ -55,11 +55,14 @@ export const FileUpload = ({ onUploadComplete }: FileUploadProps) => {
 
       if (extractError) {
         console.error('Extract error:', extractError);
-        toast.warning("File uploaded but couldn't extract text. You can add notes manually.");
+        toast.warning("File uploaded but couldn't extract text automatically. Please add detailed notes about what's in this image.");
         onUploadComplete(publicUrl, fileType);
-      } else {
-        toast.success("Content extracted successfully!");
+      } else if (extractData.content && extractData.content.length > 100) {
+        toast.success("Content extracted successfully from image!");
         onUploadComplete(publicUrl, fileType, extractData.content);
+      } else {
+        toast.warning("File uploaded. Please add detailed notes about what's in this image.");
+        onUploadComplete(publicUrl, fileType, extractData.content || '');
       }
     } catch (error: any) {
       console.error('Upload error:', error);

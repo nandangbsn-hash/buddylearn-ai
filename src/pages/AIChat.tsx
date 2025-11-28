@@ -56,7 +56,12 @@ const AIChat = () => {
           .eq("id", selectedMaterial)
           .single();
         if (data) {
-          context = `Material: "${data.title}"\n${data.content}`;
+          if (!data.content || data.content.trim().length < 50) {
+            toast.error("This material doesn't have enough content. Please edit it and add your study notes!");
+            setIsLoading(false);
+            return;
+          }
+          context = `Study Material: "${data.title}"\n\nContent:\n${data.content}`;
         }
       }
 
@@ -158,11 +163,18 @@ const AIChat = () => {
               <SelectValue placeholder="Select study material (optional)" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="">No material (general questions)</SelectItem>
               {materials.map(m => (
                 <SelectItem key={m.id} value={m.id}>{m.title}</SelectItem>
               ))}
             </SelectContent>
           </Select>
+          
+          {selectedMaterial && (
+            <p className="text-xs text-muted-foreground">
+              💡 The AI will use the content from the selected material to answer your questions
+            </p>
+          )}
         </div>
 
         <Card className="flex-1 flex flex-col">
@@ -175,8 +187,14 @@ const AIChat = () => {
                 {messages.length === 0 && (
                   <div className="text-center text-muted-foreground py-8">
                     <Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Ask me anything about your study materials!</p>
+                    <p className="text-lg font-semibold">Ask me anything about your study materials!</p>
                     <p className="text-sm mt-2">I can explain concepts, create quizzes, or help with research.</p>
+                    {selectedMaterial && (
+                      <div className="mt-4 p-3 bg-primary/10 text-primary rounded-lg max-w-md mx-auto">
+                        <p className="text-sm font-semibold">📚 Selected Material: {materials.find(m => m.id === selectedMaterial)?.title}</p>
+                        <p className="text-xs mt-1">I'll use this material's content to answer your questions!</p>
+                      </div>
+                    )}
                   </div>
                 )}
                 {messages.map((msg, idx) => (

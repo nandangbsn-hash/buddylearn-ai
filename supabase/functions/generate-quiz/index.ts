@@ -29,6 +29,12 @@ serve(async (req) => {
 
     if (materialError) throw materialError;
 
+    if (!material.content || material.content.trim().length < 50) {
+      throw new Error('Material does not have enough content to generate a quiz. Please add your study notes to this material first.');
+    }
+
+    console.log(`Generating quiz for material: "${material.title}" with ${material.content.length} characters of content`);
+
     // Generate quiz using Lovable AI with structured output
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -41,17 +47,23 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: "You are an expert quiz creator. Generate educational multiple-choice questions based on study materials."
+            content: "You are an expert quiz creator. Generate educational multiple-choice questions based STRICTLY on the provided study material. Every question must be directly answerable from the material content."
           },
           {
             role: "user",
-            content: `Create ${numQuestions} multiple-choice questions based on this material.
+            content: `Create ${numQuestions} multiple-choice questions based ONLY on this study material.
 Difficulty: ${difficulty}
 
-Material: "${material.title}"
+Study Material Title: "${material.title}"
+
+Material Content:
 ${material.content}
 
-Generate questions with 4 options each, marking the correct answer index (0-3).`
+Important: 
+- All questions must be directly answerable from the content above
+- Do not include general knowledge questions
+- Focus on key concepts, definitions, and important facts from the material
+- Generate questions with 4 options each, marking the correct answer index (0-3)`
           }
         ],
         tools: [

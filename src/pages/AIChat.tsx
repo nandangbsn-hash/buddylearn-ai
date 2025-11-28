@@ -147,12 +147,12 @@ const AIChat = () => {
             </SelectContent>
           </Select>
 
-          <Select value={selectedMaterial} onValueChange={setSelectedMaterial}>
+          <Select value={selectedMaterial || "none"} onValueChange={(val) => setSelectedMaterial(val === "none" ? "" : val)}>
             <SelectTrigger className="flex-1">
               <SelectValue placeholder="Select study material (optional)" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">No material (general questions)</SelectItem>
+              <SelectItem value="none">No material (general questions)</SelectItem>
               {materials.map(m => (
                 <SelectItem key={m.id} value={m.id}>{m.title}</SelectItem>
               ))}

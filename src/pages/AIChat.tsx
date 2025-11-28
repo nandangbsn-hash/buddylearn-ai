@@ -8,6 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Brain, ArrowLeft, Send, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { FlashcardViewer } from "@/components/FlashcardViewer";
+import { MermaidDiagram } from "@/components/MermaidDiagram";
+import { parseFlashcards, parseMermaidDiagram } from "@/utils/parseAIResponse";
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -191,22 +194,42 @@ const AIChat = () => {
                     )}
                   </div>
                 )}
-                {messages.map((msg, idx) => (
-                  <div
-                    key={idx}
-                    className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                  >
+                {messages.map((msg, idx) => {
+                  const flashcards = msg.role === "assistant" ? parseFlashcards(msg.content) : null;
+                  const mermaidDiagram = msg.role === "assistant" ? parseMermaidDiagram(msg.content) : null;
+
+                  return (
                     <div
-                      className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                        msg.role === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted"
-                      }`}
+                      key={idx}
+                      className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                     >
-                      {msg.content}
+                      {flashcards ? (
+                        <div className="w-full">
+                          <FlashcardViewer flashcards={flashcards} />
+                        </div>
+                      ) : mermaidDiagram ? (
+                        <div className="w-full">
+                          <MermaidDiagram chart={mermaidDiagram} />
+                          {msg.content.replace(/```mermaid[\s\S]+?```/, '').trim() && (
+                            <div className="mt-4 bg-muted rounded-lg px-4 py-2 prose prose-sm max-w-none">
+                              {msg.content.replace(/```mermaid[\s\S]+?```/, '').trim()}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div
+                          className={`max-w-[80%] rounded-lg px-4 py-2 whitespace-pre-wrap ${
+                            msg.role === "user"
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted"
+                          }`}
+                        >
+                          {msg.content}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {isLoading && (
                   <div className="flex justify-start">
                     <div className="bg-muted rounded-lg px-4 py-2">

@@ -58,29 +58,38 @@ serve(async (req) => {
         throw new Error('Could not extract content from link. Please copy and paste the text manually.');
       }
       
-    } else if (fileType === 'pdf') {
-      // For PDFs, inform user to paste content manually
-      extractedContent = '[PDF uploaded] Please copy and paste the text content from your PDF into the content field above. PDF text extraction coming soon!';
-      console.log('PDF detected - requesting manual input');
-      
-    } else if (fileType === 'document') {
-      // For documents, inform user to paste content manually  
-      extractedContent = '[Document uploaded] Please copy and paste the text content from your document into the content field above.';
-      console.log('Document detected - requesting manual input');
-      
-    } else if (fileType === 'image') {
-      // For images, extract visible text and describe content using AI vision
+    } else if (fileType === 'pdf' || fileType === 'document' || fileType === 'image') {
+      // Extract content from PDFs, documents, and images using AI vision
       try {
-        console.log('Extracting from image:', url);
-        const imageResponse = await fetch(url);
+        console.log('Extracting from file:', url, 'type:', fileType);
         
-        if (!imageResponse.ok) {
-          throw new Error('Could not fetch image');
+        // Fetch the file with proper headers
+        const fileResponse = await fetch(url, {
+          headers: {
+            'User-Agent': 'Buddy-Study-App/1.0'
+          }
+        });
+        
+        if (!fileResponse.ok) {
+          console.error('File fetch failed:', fileResponse.status, fileResponse.statusText);
+          throw new Error(`Could not fetch file: ${fileResponse.status} ${fileResponse.statusText}`);
         }
         
-        const imageBlob = await imageResponse.blob();
-        const arrayBuffer = await imageBlob.arrayBuffer();
+        const fileBlob = await fileResponse.blob();
+        const arrayBuffer = await fileBlob.arrayBuffer();
         const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+        
+        console.log('File fetched successfully, size:', fileBlob.size, 'type:', fileBlob.type);
+        
+        // Determine the appropriate prompt based on file type
+        let extractionPrompt = '';
+        if (fileType === 'pdf') {
+          extractionPrompt = 'This is a PDF document. Extract ALL text content from every page. Include headings, paragraphs, bullet points, tables, captions, and any other text. Preserve the document structure using markdown formatting. Be comprehensive - extract every piece of educational content.';
+        } else if (fileType === 'document') {
+          extractionPrompt = 'This is a document file. Extract ALL text content including headings, paragraphs, bullet points, tables, and formatting. Preserve the document structure using markdown. Be comprehensive.';
+        } else if (fileType === 'image') {
+          extractionPrompt = 'Extract ALL visible text from this image (perform OCR on any text you see). Then describe in detail what the image shows - include all educational content, diagrams, charts, tables, or visual information. Format as clear markdown with headings and bullet points. Be comprehensive - this will be used as study material.';
+        }
         
         const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
@@ -96,12 +105,12 @@ serve(async (req) => {
                 content: [
                   {
                     type: "text",
-                    text: "Extract ALL visible text from this image (perform OCR on any text you see). Then describe in detail what the image shows - include all educational content, diagrams, charts, tables, or visual information. Format as clear markdown with headings and bullet points. Be comprehensive - this will be used as study material."
+                    text: extractionPrompt
                   },
                   {
                     type: "image_url",
                     image_url: {
-                      url: `data:${imageBlob.type};base64,${base64}`
+                      url: `data:${fileBlob.type};base64,${base64}`
                     }
                   }
                 ]
@@ -119,10 +128,11 @@ serve(async (req) => {
 
         const aiData = await aiResponse.json();
         extractedContent = aiData.choices[0].message.content;
-        console.log('Extracted from image using vision, length:', extractedContent.length);
+        console.log('Successfully extracted content, length:', extractedContent.length);
       } catch (error) {
-        console.error('Image extraction error:', error);
-        extractedContent = '[Image uploaded] Could not automatically extract content. Please describe what you see in this image and add any text/information from it to the content field above.';
+        console.error('File extraction error:', error);
+        const fileTypeLabel = fileType === 'pdf' ? 'PDF' : fileType === 'document' ? 'Document' : 'Image';
+        extractedContent = `[${fileTypeLabel} uploaded] Could not automatically extract content. Please add detailed notes about what's in this ${fileType} to the content field above.`;
       }
     } else {
       extractedContent = '[File uploaded] Please add any notes or content related to this file in the content field above.';

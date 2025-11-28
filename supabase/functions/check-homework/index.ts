@@ -29,7 +29,7 @@ serve(async (req) => {
 
     if (fetchError) throw fetchError;
 
-    // Use AI to verify completion
+    // Use AI to verify completion with structured output
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -41,7 +41,7 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: "You are a homework verification assistant. Analyze submissions and determine if they appear complete and worthy of XP rewards. Return a JSON response with: { completed: boolean, xp: number (10-50 based on quality), feedback: string }"
+            content: "You are a homework verification assistant. Analyze submissions and determine if they appear complete and worthy of XP rewards."
           },
           {
             role: "user",
@@ -52,16 +52,57 @@ File Type: ${submission.file_type || 'No file'}
 
 Determine if this looks like a completed homework submission and assign appropriate XP (10-50).`
           }
-        ]
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "verify_homework",
+              description: "Verify homework completion and assign XP",
+              parameters: {
+                type: "object",
+                properties: {
+                  completed: {
+                    type: "boolean",
+                    description: "Whether the homework appears complete"
+                  },
+                  xp: {
+                    type: "number",
+                    description: "XP to award (10-50 based on quality)",
+                    minimum: 10,
+                    maximum: 50
+                  },
+                  feedback: {
+                    type: "string",
+                    description: "Feedback message for the student"
+                  }
+                },
+                required: ["completed", "xp", "feedback"],
+                additionalProperties: false
+              }
+            }
+          }
+        ],
+        tool_choice: { type: "function", function: { name: "verify_homework" } }
       })
     });
 
     if (!aiResponse.ok) {
+      const errorText = await aiResponse.text();
+      console.error(`AI API error: ${aiResponse.status}`, errorText);
       throw new Error(`AI API error: ${aiResponse.status}`);
     }
 
     const aiData = await aiResponse.json();
-    const result = JSON.parse(aiData.choices[0].message.content);
+    console.log("AI Response:", JSON.stringify(aiData, null, 2));
+    
+    // Extract structured output from tool call
+    const toolCall = aiData.choices[0].message.tool_calls?.[0];
+    if (!toolCall) {
+      throw new Error("No tool call returned from AI");
+    }
+    
+    const result = JSON.parse(toolCall.function.arguments);
 
     // Award XP and update submission
     const xpToAward = Math.min(50, Math.max(10, result.xp));

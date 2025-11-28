@@ -17,6 +17,7 @@ const Materials = () => {
   const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isParsing, setIsParsing] = useState(false);
   const [materials, setMaterials] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
 
@@ -198,9 +199,35 @@ const Materials = () => {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <FileUpload
-                  onUploadComplete={(url, type) => {
+                  onUploadComplete={async (url, type) => {
                     setFileUrl(url);
                     setFileType(type);
+                    
+                    // Auto-extract text from PDFs
+                    if (type === 'application/pdf') {
+                      setIsParsing(true);
+                      toast.info("Extracting text from PDF... This may take a moment.");
+                      
+                      try {
+                        const { data, error } = await supabase.functions.invoke('extract-pdf-text', {
+                          body: { fileUrl: url }
+                        });
+                        
+                        if (error) throw error;
+                        
+                        if (data?.text) {
+                          setContent(data.text);
+                          toast.success("PDF text extracted successfully!");
+                        } else {
+                          toast.warning("No text could be extracted. Please add notes manually.");
+                        }
+                      } catch (error: any) {
+                        console.error('PDF extraction error:', error);
+                        toast.error("Could not extract PDF text. Please add notes manually.");
+                      } finally {
+                        setIsParsing(false);
+                      }
+                    }
                   }}
                 />
 
@@ -267,22 +294,23 @@ const Materials = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="content">
-                    Additional Notes 
-                    {fileType === 'application/pdf' && <span className="text-destructive"> (Required for PDFs)</span>}
+                    {fileType === 'application/pdf' ? 'Extracted Text' : 'Additional Notes'}
+                    {isParsing && <span className="text-primary"> (Extracting...)</span>}
                   </Label>
                   <p className="text-xs text-muted-foreground">
                     {fileType === 'application/pdf' 
-                      ? '⚠️ PDFs cannot be directly analyzed by AI. Please add text notes or key points from your PDF here.'
+                      ? '✨ Text automatically extracted from your PDF. You can edit or add more notes.'
                       : 'Add any extra notes or context. AI will analyze your uploaded file directly (images only).'}
                   </p>
                   <Textarea
                     id="content"
                     placeholder={fileType === 'application/pdf' 
-                      ? "Add notes, key points, or summary from your PDF..."
+                      ? "Extracted text will appear here..."
                       : "Add optional notes to complement your uploaded file..."}
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
-                    rows={6}
+                    rows={8}
+                    disabled={isParsing}
                   />
                 </div>
 

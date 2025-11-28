@@ -73,6 +73,8 @@ const EmailPreferences = () => {
           include_today: preferences.include_today,
           include_this_week: preferences.include_this_week,
           include_upcoming: preferences.include_upcoming,
+        }, {
+          onConflict: 'user_id'
         });
 
       if (error) {

@@ -89,11 +89,40 @@ Determine if this looks like a completed homework submission and assign appropri
         const newXP = progress.total_xp + xpToAward;
         const newLevel = Math.floor(newXP / 100) + 1;
 
+        // Calculate streak
+        const today = new Date().toISOString().split('T')[0];
+        const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+        const lastActivityDate = progress.last_activity_date;
+
+        let currentStreak = progress.current_streak || 0;
+        let longestStreak = progress.longest_streak || 0;
+
+        if (lastActivityDate === today) {
+          // Already active today, no change
+          console.log("Already active today, streak unchanged");
+        } else if (lastActivityDate === yesterday) {
+          // Streak continues
+          currentStreak += 1;
+          console.log(`Streak continues! Now at ${currentStreak} days`);
+        } else {
+          // Streak broken or first activity
+          currentStreak = 1;
+          console.log("Starting new streak");
+        }
+
+        // Update longest streak if needed
+        if (currentStreak > longestStreak) {
+          longestStreak = currentStreak;
+        }
+
         await supabase
           .from('user_progress')
           .update({
             total_xp: newXP,
-            level: newLevel
+            level: newLevel,
+            current_streak: currentStreak,
+            longest_streak: longestStreak,
+            last_activity_date: today
           })
           .eq('user_id', submission.user_id);
       }

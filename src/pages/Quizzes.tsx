@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { Brain, ArrowLeft, Sparkles, Trophy, CheckCircle2, XCircle } from "lucide-react";
+import { updateStreak } from "@/lib/updateStreak";
 
 const Quizzes = () => {
   const navigate = useNavigate();
@@ -113,6 +114,9 @@ const Quizzes = () => {
           level: newLevel
         })
         .eq("user_id", user.id);
+
+      // Update streak
+      await updateStreak(user.id);
     }
   };
 

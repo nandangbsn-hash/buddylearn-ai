@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Brain, Upload, FileText, ArrowLeft, Loader2, Sparkles } from "lucide-react";
 import { FileUpload } from "@/components/FileUpload";
+import { updateStreak } from "@/lib/updateStreak";
 
 const Materials = () => {
   const navigate = useNavigate();
@@ -159,6 +160,9 @@ const Materials = () => {
           last_activity_date: new Date().toISOString().split('T')[0]
         })
         .eq("user_id", user.id);
+
+      // Update streak
+      await updateStreak(user.id);
     }
   };
 

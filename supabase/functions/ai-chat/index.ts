@@ -120,7 +120,17 @@ Use spaced repetition principles - focus on areas where the student struggles.`;
             
             if (!downloadError && fileData) {
               const arrayBuffer = await fileData.arrayBuffer();
-              const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+              
+              // Convert to base64 in chunks to avoid stack overflow with large files
+              const uint8Array = new Uint8Array(arrayBuffer);
+              const chunkSize = 0x8000; // 32KB chunks
+              let binaryString = '';
+              
+              for (let i = 0; i < uint8Array.length; i += chunkSize) {
+                const chunk = uint8Array.subarray(i, i + chunkSize);
+                binaryString += String.fromCharCode.apply(null, Array.from(chunk));
+              }
+              const base64 = btoa(binaryString);
               
               contextParts.push({
                 type: "image_url",

@@ -20,3 +20,6 @@ verify_jwt = true
 
 [functions.homework-helper]
 verify_jwt = true
+
+[functions.extract-content]
+verify_jwt = true

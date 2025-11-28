@@ -46,8 +46,21 @@ export const FileUpload = ({ onUploadComplete }: FileUploadProps) => {
         fileType = 'document';
       }
 
-      toast.success("File uploaded successfully!");
-      onUploadComplete(publicUrl, fileType);
+      toast.success("File uploaded! Extracting content...");
+      
+      // Extract content from the uploaded file
+      const { data: extractData, error: extractError } = await supabase.functions.invoke('extract-content', {
+        body: { url: publicUrl, fileType }
+      });
+
+      if (extractError) {
+        console.error('Extract error:', extractError);
+        toast.warning("File uploaded but couldn't extract text. You can add notes manually.");
+        onUploadComplete(publicUrl, fileType);
+      } else {
+        toast.success("Content extracted successfully!");
+        onUploadComplete(publicUrl, fileType, extractData.content);
+      }
     } catch (error: any) {
       console.error('Upload error:', error);
       toast.error(error.message || "Failed to upload file");
@@ -56,16 +69,32 @@ export const FileUpload = ({ onUploadComplete }: FileUploadProps) => {
     }
   };
 
-  const handleUrlSubmit = () => {
+  const handleUrlSubmit = async () => {
     if (!url) return;
     
     try {
       new URL(url); // Validate URL
-      toast.success("Link added successfully!");
-      onUploadComplete(url, 'link');
+      setIsUploading(true);
+      toast.info("Fetching content from link...");
+      
+      // Extract content from the URL
+      const { data: extractData, error: extractError } = await supabase.functions.invoke('extract-content', {
+        body: { url, fileType: 'link' }
+      });
+
+      if (extractError) {
+        console.error('Extract error:', extractError);
+        toast.warning("Link added but couldn't extract content. You can add notes manually.");
+        onUploadComplete(url, 'link');
+      } else {
+        toast.success("Content extracted from link!");
+        onUploadComplete(url, 'link', extractData.content);
+      }
       setUrl("");
-    } catch {
+    } catch (error) {
       toast.error("Please enter a valid URL");
+    } finally {
+      setIsUploading(false);
     }
   };
 

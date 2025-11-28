@@ -7,12 +7,13 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { ArrowLeft, Mail, Clock, Loader2 } from "lucide-react";
+import { ArrowLeft, Mail, Clock, Loader2, Send } from "lucide-react";
 
 const EmailPreferences = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [sendingTest, setSendingTest] = useState(false);
   const [preferences, setPreferences] = useState({
     daily_digest_enabled: true,
     digest_time: "08:00",
@@ -91,6 +92,48 @@ const EmailPreferences = () => {
     }
   };
 
+  const handleSendTestEmail = async () => {
+    setSendingTest(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Temporarily set user's digest time to current hour for immediate send
+      const currentHour = new Date().getUTCHours();
+      const testTime = `${currentHour.toString().padStart(2, '0')}:00:00`;
+      
+      await supabase
+        .from("email_preferences")
+        .update({ digest_time: testTime })
+        .eq("user_id", user.id);
+
+      // Trigger the send-reminder function
+      const { data, error } = await supabase.functions.invoke('send-reminder', {
+        body: {}
+      });
+
+      // Restore original time
+      await supabase
+        .from("email_preferences")
+        .update({ digest_time: preferences.digest_time + ":00" })
+        .eq("user_id", user.id);
+
+      if (error) {
+        console.error("Error sending test email:", error);
+        toast.error("Failed to send test email");
+      } else if (data?.digests_sent > 0) {
+        toast.success("Test email sent successfully! Check your inbox.");
+      } else {
+        toast.info("No pending tasks to send. Add some incomplete study plans first.");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("An error occurred");
+    } finally {
+      setSendingTest(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -160,9 +203,14 @@ const EmailPreferences = () => {
                 disabled={!preferences.daily_digest_enabled}
                 className="max-w-xs"
               />
-              <p className="text-xs text-muted-foreground">
-                ⓘ Time is in UTC. Your local time may differ based on your timezone.
-              </p>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">
+                  ⓘ Time is in UTC. Your local time may differ based on your timezone.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  ⓘ Emails send at the top of the hour (e.g., 8:00, 9:00). The minutes are ignored.
+                </p>
+              </div>
             </div>
 
             <div className="border-t pt-6">
@@ -238,7 +286,7 @@ const EmailPreferences = () => {
               </div>
             </div>
 
-            <div className="pt-4">
+            <div className="pt-4 space-y-3">
               <Button
                 onClick={handleSave}
                 disabled={saving || !preferences.daily_digest_enabled}
@@ -251,6 +299,25 @@ const EmailPreferences = () => {
                   </>
                 ) : (
                   "Save Preferences"
+                )}
+              </Button>
+              
+              <Button
+                onClick={handleSendTestEmail}
+                disabled={sendingTest || !preferences.daily_digest_enabled}
+                variant="outline"
+                className="w-full"
+              >
+                {sendingTest ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 mr-2" />
+                    Send Test Email Now
+                  </>
                 )}
               </Button>
             </div>

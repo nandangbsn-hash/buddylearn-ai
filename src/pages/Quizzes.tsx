@@ -35,16 +35,19 @@ const Quizzes = () => {
       // First check if material has content
       const { data: material, error: matError } = await supabase
         .from('materials')
-        .select('content, title')
+        .select('content, title, file_url, file_type')
         .eq('id', materialId)
         .single();
 
       if (matError) throw matError;
       
       if (!material?.content || material.content.trim().length < 50) {
-        toast.error("This material doesn't have enough content to generate a quiz. Please edit it and add your study notes!");
+        toast.error(
+          `This material needs more detailed content! Current: "${material?.content?.substring(0, 50)}..."\n\n` +
+          `To fix: Go back to Materials and edit this item to add comprehensive study notes about ${material?.title || 'this topic'}.`,
+          { duration: 8000 }
+        );
         setIsGenerating(false);
-        navigate('/materials');
         return;
       }
 
@@ -59,7 +62,11 @@ const Quizzes = () => {
       }
     } catch (error: any) {
       console.error('Quiz generation error:', error);
-      toast.error(error.message || "Failed to generate quiz");
+      if (error.message?.includes('enough content')) {
+        toast.error("Please go back and add detailed study notes to this material before generating a quiz.", { duration: 6000 });
+      } else {
+        toast.error(error.message || "Failed to generate quiz");
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -155,11 +162,23 @@ const Quizzes = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="w-full max-w-md">
-          <CardContent className="py-12 text-center">
-            <p>No quiz available</p>
-            <Button onClick={() => navigate("/materials")} className="mt-4">
-              Back to Materials
-            </Button>
+          <CardContent className="py-12 text-center space-y-4">
+            <Brain className="h-16 w-16 mx-auto text-muted-foreground opacity-50" />
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Quiz Not Available</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                This material needs more detailed content before we can generate a quiz.
+              </p>
+              <p className="text-xs text-amber-600 dark:text-amber-400 mb-4">
+                💡 Tip: Add comprehensive study notes (at least 50 characters) about the material to enable quiz generation.
+              </p>
+            </div>
+            <div className="flex gap-2 justify-center">
+              <Button onClick={() => navigate("/materials")} variant="default">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Materials
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

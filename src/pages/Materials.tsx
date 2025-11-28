@@ -333,22 +333,45 @@ const Materials = () => {
                       )}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    {material.topic && (
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Topic: {material.topic}
-                      </p>
-                    )}
-                    <p className="text-sm line-clamp-3 mb-4">{material.content}</p>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => navigate(`/quizzes?materialId=${material.id}`)}
-                    >
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      Generate Quiz
-                    </Button>
-                  </CardContent>
+                   <CardContent>
+                     {material.topic && (
+                       <p className="text-sm text-muted-foreground mb-2">
+                         Topic: {material.topic}
+                       </p>
+                     )}
+                     {material.content && material.content.trim().length > 50 ? (
+                       <>
+                         <p className="text-sm line-clamp-3 mb-4">{material.content}</p>
+                         <div className="flex gap-2">
+                           <Button 
+                             size="sm" 
+                             variant="outline"
+                             onClick={() => navigate(`/quizzes?materialId=${material.id}`)}
+                           >
+                             <Sparkles className="h-4 w-4 mr-2" />
+                             Generate Quiz
+                           </Button>
+                           <Button 
+                             size="sm" 
+                             variant="ghost"
+                             onClick={() => navigate(`/ai-chat`)}
+                           >
+                             <Brain className="h-4 w-4 mr-2" />
+                             Ask AI
+                           </Button>
+                         </div>
+                       </>
+                     ) : (
+                       <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                         <p className="text-sm text-amber-800 dark:text-amber-200 mb-3">
+                           ⚠️ This material needs content! Add your study notes or copy text from your document so the AI can create quizzes and answer questions.
+                         </p>
+                         <p className="text-xs text-muted-foreground">
+                           Note: If you uploaded a file/link, you'll need to manually copy and paste the content until automatic extraction is fully supported.
+                         </p>
+                       </div>
+                     )}
+                   </CardContent>
                 </Card>
               ))
             )}

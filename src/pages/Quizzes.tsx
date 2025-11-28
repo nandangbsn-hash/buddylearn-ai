@@ -32,6 +32,22 @@ const Quizzes = () => {
   const generateQuiz = async () => {
     setIsGenerating(true);
     try {
+      // First check if material has content
+      const { data: material, error: matError } = await supabase
+        .from('materials')
+        .select('content, title')
+        .eq('id', materialId)
+        .single();
+
+      if (matError) throw matError;
+      
+      if (!material?.content || material.content.trim().length < 50) {
+        toast.error("This material doesn't have enough content to generate a quiz. Please edit it and add your study notes!");
+        setIsGenerating(false);
+        navigate('/materials');
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('generate-quiz', {
         body: { materialId, numQuestions: 5, difficulty: 'medium' }
       });
@@ -39,6 +55,7 @@ const Quizzes = () => {
       if (error) throw error;
       if (data.quiz) {
         setQuiz(data.quiz);
+        toast.success("Quiz generated from your study material!");
       }
     } catch (error: any) {
       console.error('Quiz generation error:', error);

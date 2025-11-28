@@ -198,10 +198,17 @@ const Materials = () => {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <FileUpload
-                  onUploadComplete={(url, type, text) => {
+                  onUploadComplete={(url, type, extractedText) => {
                     setFileUrl(url);
                     setFileType(type);
-                    if (text) setContent(text);
+                    if (extractedText) {
+                      // Combine extracted content with existing notes
+                      const combinedContent = content 
+                        ? `${content}\n\n--- Extracted from ${type === 'link' ? 'link' : 'file'} ---\n\n${extractedText}`
+                        : extractedText;
+                      setContent(combinedContent);
+                      toast.info("Extracted content added to the content field. You can edit or add more notes!");
+                    }
                   }}
                 />
 
@@ -267,10 +274,13 @@ const Materials = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="content">Content *</Label>
+                  <Label htmlFor="content">Content / Notes *</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Content from uploaded files/links will be automatically extracted here. You can add your own notes too!
+                  </p>
                   <Textarea
                     id="content"
-                    placeholder="Paste your notes or study content here..."
+                    placeholder="Paste your notes or study content here... (or upload a file to auto-extract content)"
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     rows={8}

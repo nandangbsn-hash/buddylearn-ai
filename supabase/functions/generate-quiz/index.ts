@@ -29,7 +29,7 @@ serve(async (req) => {
 
     if (materialError) throw materialError;
 
-    // Generate quiz using Lovable AI
+    // Generate quiz using Lovable AI with structured output
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -51,17 +51,57 @@ Difficulty: ${difficulty}
 Material: "${material.title}"
 ${material.content}
 
-Return JSON array of questions:
-[
-  {
-    "question": "question text",
-    "options": ["A) option1", "B) option2", "C) option3", "D) option4"],
-    "correct_answer": 0,
-    "explanation": "why this is correct"
-  }
-]`
+Generate questions with 4 options each, marking the correct answer index (0-3).`
           }
-        ]
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "generate_quiz",
+              description: "Generate multiple-choice quiz questions",
+              parameters: {
+                type: "object",
+                properties: {
+                  questions: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        question: {
+                          type: "string",
+                          description: "The question text"
+                        },
+                        options: {
+                          type: "array",
+                          items: { type: "string" },
+                          minItems: 4,
+                          maxItems: 4,
+                          description: "Four answer options"
+                        },
+                        correct_answer: {
+                          type: "integer",
+                          minimum: 0,
+                          maximum: 3,
+                          description: "Index of the correct answer (0-3)"
+                        },
+                        explanation: {
+                          type: "string",
+                          description: "Explanation of why the answer is correct"
+                        }
+                      },
+                      required: ["question", "options", "correct_answer", "explanation"],
+                      additionalProperties: false
+                    }
+                  }
+                },
+                required: ["questions"],
+                additionalProperties: false
+              }
+            }
+          }
+        ],
+        tool_choice: { type: "function", function: { name: "generate_quiz" } }
       })
     });
 
@@ -72,7 +112,15 @@ Return JSON array of questions:
     }
 
     const aiData = await aiResponse.json();
-    const questions = JSON.parse(aiData.choices[0].message.content);
+    console.log("AI Response:", JSON.stringify(aiData, null, 2));
+    
+    // Extract structured output from tool call
+    const toolCall = aiData.choices[0].message.tool_calls?.[0];
+    if (!toolCall) {
+      throw new Error("No tool call returned from AI");
+    }
+    
+    const { questions } = JSON.parse(toolCall.function.arguments);
 
     // Save quiz to database
     const { data: quiz, error: quizError } = await supabase

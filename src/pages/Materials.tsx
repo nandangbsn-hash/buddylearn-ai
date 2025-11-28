@@ -300,7 +300,9 @@ const Materials = () => {
                   <p className="text-xs text-muted-foreground">
                     {fileType === 'application/pdf' 
                       ? '✨ Text automatically extracted from your PDF. You can edit or add more notes.'
-                      : 'Add any extra notes or context. AI will analyze your uploaded file directly (images only).'}
+                      : fileType.startsWith('image/')
+                      ? '✅ Images work directly with AI - no extraction needed! You can add optional notes below or leave empty.'
+                      : 'Add any extra notes or context. AI will analyze your uploaded file directly.'}
                   </p>
                   <Textarea
                     id="content"

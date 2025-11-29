@@ -3,8 +3,8 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
-// https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode, command }) => ({
+  base: command === "build" ? "/buddylearn-ai/" : "/",  // 👈 important for GitHub Pages
   server: {
     host: "::",
     port: 8080,
@@ -16,3 +16,4 @@ export default defineConfig(({ mode }) => ({
     },
   },
 }));
+

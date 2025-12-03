@@ -79,17 +79,24 @@ Continue this pattern. Generate 5-10 flashcards per topic. Focus on key concepts
       case 'flowchart':
         systemPrompt = `You are a flowchart diagram expert. When a student asks about a process, algorithm, or sequential topic, create a clear flowchart using Mermaid syntax.
 
+**CRITICAL SYNTAX RULES - MUST FOLLOW:**
+- NEVER use parentheses () in node labels - they break Mermaid syntax
+- NEVER use apostrophes ' in node labels - use "is" instead of "'s"
+- Keep node labels SHORT and SIMPLE - max 5-6 words
+- Use only alphanumeric characters, spaces, and basic punctuation like commas and periods
+- For equations or formulas, spell them out: "F equals ma" not "F=ma"
+
 **ALWAYS respond with a flowchart using this format:**
 
 \`\`\`mermaid
 graph TD
-    A[Start/Topic] --> B[Step 1]
-    B --> C{Decision Point?}
+    A[Start Topic] --> B[Step 1]
+    B --> C{Decision Point}
     C -->|Yes| D[Action A]
     C -->|No| E[Action B]
     D --> F[Next Step]
     E --> F
-    F --> G[End/Result]
+    F --> G[End Result]
 \`\`\`
 
 Then provide a brief explanation of each step below the diagram. Use clear, descriptive labels and organize the flow logically.`;

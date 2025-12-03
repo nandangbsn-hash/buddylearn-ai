@@ -21,10 +21,20 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     let systemPrompt = '';
+    let hasMaterialContext = false;
+    
+    // Base capabilities message
+    const capabilitiesMessage = `**Your Capabilities:**
+- You CAN read and analyze PDFs, images, and documents that users have uploaded
+- You CAN extract text, understand diagrams, read handwritten notes, and analyze visual content
+- When a study material is selected, you have FULL ACCESS to its content including any attached files
+- NEVER say you cannot read PDFs or images - you absolutely can!`;
     
     switch (mode) {
       case 'explain':
-        systemPrompt = `You are an expert tutor who excels at explaining complex concepts. Use rich formatting:
+        systemPrompt = `You are an expert tutor who excels at explaining complex concepts.
+
+${capabilitiesMessage}
 
 **Formatting Guidelines:**
 - Use ## for main headings
@@ -58,26 +68,34 @@ graph TD
 Always be encouraging and patient.`;
         break;
       case 'quiz':
-        systemPrompt = `You are a flashcard creator. ALWAYS generate flashcards for any topic the student asks about.
+        systemPrompt = `You are a flashcard creator. ALWAYS generate flashcards based on the study material provided.
+
+${capabilitiesMessage}
+
+**CRITICAL RULE:** When a study material is selected, create flashcards ONLY from that specific material's content. Do NOT add information from outside sources.
 
 **MANDATORY Format for ALL responses:**
 
 FLASHCARD 1:
-**Front:** [Question/Term]
-**Back:** [Answer/Definition]
+**Front:** [Question/Term from the material]
+**Back:** [Answer/Definition from the material]
 
 FLASHCARD 2:
-**Front:** [Question/Term]
-**Back:** [Answer/Definition]
+**Front:** [Question/Term from the material]
+**Back:** [Answer/Definition from the material]
 
 FLASHCARD 3:
-**Front:** [Question/Term]
-**Back:** [Answer/Definition]
+**Front:** [Question/Term from the material]
+**Back:** [Answer/Definition from the material]
 
-Continue this pattern. Generate 5-10 flashcards per topic. Focus on key concepts, definitions, and important facts.`;
+Continue this pattern. Generate 5-10 flashcards per topic. Focus on key concepts, definitions, and important facts FROM THE PROVIDED MATERIAL.`;
         break;
       case 'flowchart':
-        systemPrompt = `You are a flowchart diagram expert. When a student asks about a process, algorithm, or sequential topic, create a clear flowchart using Mermaid syntax.
+        systemPrompt = `You are a flowchart diagram expert. Create flowcharts based on the study material provided.
+
+${capabilitiesMessage}
+
+**CRITICAL RULE:** When a study material is selected, create flowcharts ONLY about topics from that specific material. Do NOT add information from outside sources.
 
 **CRITICAL SYNTAX RULES - MUST FOLLOW:**
 - NEVER use parentheses () in node labels - they break Mermaid syntax
@@ -99,10 +117,12 @@ graph TD
     F --> G[End Result]
 \`\`\`
 
-Then provide a brief explanation of each step below the diagram. Use clear, descriptive labels and organize the flow logically.`;
+Then provide a brief explanation of each step below the diagram.`;
         break;
       default:
-        systemPrompt = 'You are a helpful study assistant.';
+        systemPrompt = `You are a helpful study assistant.
+
+${capabilitiesMessage}`;
     }
 
     // Prepare AI messages with material context
@@ -119,14 +139,35 @@ Then provide a brief explanation of each step below the diagram. Use clear, desc
         .single();
       
       if (material) {
+        hasMaterialContext = true;
         // Build context message with file if available
         const contextParts: any[] = [];
         
-        // Add text context
-        let textContext = `Study Material: "${material.title}"`;
+        // Add strong instruction to focus ONLY on this material
+        let textContext = `**IMPORTANT CONTEXT - YOU MUST USE THIS:**
+You have been given access to the following study material. Your responses MUST be based EXCLUSIVELY on this material.
+Do NOT use external knowledge. Only reference what is in this document/image.
+
+📚 **Study Material Title:** "${material.title}"`;
+        
         if (material.content) {
-          textContext += `\n\nNotes:\n${material.content}`;
+          textContext += `\n\n📝 **User Notes:**\n${material.content}`;
         }
+        
+        // Add file type info
+        if (material.file_url && material.file_type) {
+          const isImage = material.file_type.startsWith('image/');
+          const isPDF = material.file_type === 'application/pdf';
+          if (isImage) {
+            textContext += `\n\n📎 **Attached File:** Image file (analyzing below)
+You have FULL ACCESS to read and analyze this image. Extract all text, understand diagrams, and use this content to answer questions.`;
+          } else if (isPDF) {
+            textContext += `\n\n📎 **Attached File:** PDF document (analyzing below)
+You have FULL ACCESS to read and analyze this PDF. Extract all text, understand diagrams, tables, and use this content to answer questions.`;
+          }
+        }
+        
+        textContext += `\n\n**INSTRUCTION:** Answer questions ONLY based on the content above and the attached file. If asked about something not in this material, politely explain that the topic is not covered in the selected study material.`;
         
         contextParts.push({
           type: "text",
@@ -135,7 +176,6 @@ Then provide a brief explanation of each step below the diagram. Use clear, desc
         
         // Add file if available (images or PDFs)
         if (material.file_url && material.file_type) {
-          // Process images and PDFs
           const isImage = material.file_type.startsWith('image/');
           const isPDF = material.file_type === 'application/pdf';
           
@@ -145,11 +185,17 @@ Then provide a brief explanation of each step below the diagram. Use clear, desc
               const bucket = urlParts[1];
               const path = urlParts[2];
               
+              console.log(`Downloading file from bucket: ${bucket}, path: ${path}`);
+              
               const { data: fileData, error: downloadError } = await supabase.storage
                 .from(bucket)
                 .download(path);
               
-              if (!downloadError && fileData) {
+              if (downloadError) {
+                console.error('Error downloading file:', downloadError);
+              } else if (fileData) {
+                console.log(`File downloaded successfully, size: ${fileData.size} bytes, type: ${fileData.type}`);
+                
                 const arrayBuffer = await fileData.arrayBuffer();
                 
                 // Convert to base64 in chunks to avoid stack overflow with large files
@@ -163,17 +209,22 @@ Then provide a brief explanation of each step below the diagram. Use clear, desc
                 }
                 const base64 = btoa(binaryString);
                 
+                // Determine correct MIME type
+                const mimeType = isPDF ? 'application/pdf' : fileData.type;
+                
                 contextParts.push({
                   type: "image_url",
                   image_url: {
-                    url: `data:${fileData.type};base64,${base64}`
+                    url: `data:${mimeType};base64,${base64}`
                   }
                 });
+                
+                console.log(`File encoded as base64, mime type: ${mimeType}`);
               }
             }
           } else {
             // For non-image/PDF files, add a note
-            textContext += `\n\n[Note: A ${material.file_type} file is attached but cannot be directly analyzed. Please refer to the notes above or provide text content for analysis.]`;
+            textContext += `\n\n[Note: A ${material.file_type} file is attached but cannot be directly analyzed. Please refer to the notes above.]`;
             contextParts[0].text = textContext;
           }
         }
